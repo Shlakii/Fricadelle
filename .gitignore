@@ -30,6 +30,11 @@ output/*.html
 # Scan results (sensitive data)
 results/scans/*
 !results/scans/.gitkeep
+!results/scans/README.txt
+
+# Test files
+test_*.py
+test_*.html
 
 # IDE
 .vscode/
