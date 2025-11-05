@@ -1,0 +1,9 @@
+audit:
+  enabled: true
+  log_path: /var/log/audit.log
+  log_format: json
+  filters:
+    - type: ssh
+      action: log
+    - type: http
+      action: alert
