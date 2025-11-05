@@ -1,9 +1,21 @@
 audit:
-  enabled: true
-  log_path: /var/log/audit.log
-  log_format: json
-  filters:
-    - type: ssh
-      action: log
-    - type: http
-      action: alert
+  client_name: "ACME Corp"
+  audit_date: "2025-11-05"
+  audit_end_date: "2025-11-06"
+  audit_type: "Pentest Externe + Interne"
+  scope:
+    - "192.168.1.0/24"
+    - "172.16.5.0/24"
+    - "example.com"
+  testeurs:
+    - "Alice Dupont"
+    - "Bob Martin"
+  contact_client: "ciso@acme.com"
+
+report:
+  language: "fr"
+  format: "both"  # pdf, html, ou both
+  include_appendix: true
+  include_roadmap: true
+  logo_path: "assets/logo.png"
+  output_dir: "output"

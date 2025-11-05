@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport d'Audit de Sécurité - {{ audit_metadata.client_name }}</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<!-- Couverture -->
+<div class="cover-page">
+    {% if logo_path %}
+    <img src="{{ logo_path }}" alt="Logo" style="max-width: 200px; margin-bottom: 30px;">
+    {% endif %}
+    <h1>Rapport d'Audit de Sécurité</h1>
+    <h2>{{ audit_metadata.audit_type }}</h2>
+    <div class="metadata">
+        <p><strong>Client:</strong> {{ audit_metadata.client_name }}</p>
+        <p><strong>Période:</strong> {{ audit_metadata.audit_date }} - {{ audit_metadata.audit_end_date }}</p>
+        <p><strong>Auditeurs:</strong> {{ audit_metadata.testeurs | join(', ') }}</p>
+        <p><strong>Date du rapport:</strong> {{ report_date }}</p>
+    </div>
+</div>
+
+<!-- Table des matières -->
+<div class="toc page-break">
+    <h2>Table des Matières</h2>
+    <ul>
+        <li><a href="#executive-summary">1. Résumé Exécutif</a></li>
+        <li><a href="#dashboard">2. Tableau de Bord</a></li>
+        <li><a href="#findings">3. Détails des Vulnérabilités</a></li>
+        <li><a href="#findings-by-severity">3.1. Par Niveau de Sévérité</a></li>
+        <li><a href="#findings-by-type">3.2. Par Type de Vulnérabilité</a></li>
+        {% if include_roadmap %}
+        <li><a href="#roadmap">4. Plan de Remédiation</a></li>
+        {% endif %}
+        {% if include_appendix %}
+        <li><a href="#appendix">5. Annexes Techniques</a></li>
+        {% endif %}
+    </ul>
+</div>
+
+<!-- Executive Summary -->
+<div id="executive-summary" class="section page-break">
+    <h1>1. Résumé Exécutif</h1>
+    
+    <div class="executive-summary">
+        <h3>Contexte de la Mission</h3>
+        <p>
+            Dans le cadre de l'évaluation de la posture de sécurité de <strong>{{ audit_metadata.client_name }}</strong>,
+            notre équipe a réalisé un {{ audit_metadata.audit_type }} du {{ audit_metadata.audit_date }} au {{ audit_metadata.audit_end_date }}.
+        </p>
+        
+        <h3>Périmètre d'Audit</h3>
+        <ul>
+            {% for scope_item in audit_metadata.scope %}
+            <li>{{ scope_item }}</li>
+            {% endfor %}
+        </ul>
+        
+        <h3>Synthèse des Résultats</h3>
+        <p>
+            L'audit a permis d'identifier <strong>{{ summary.total_findings }} vulnérabilités</strong> réparties comme suit :
+        </p>
+        <ul>
+            <li><strong style="color: #dc3545;">{{ summary.critical }} vulnérabilités critiques</strong> nécessitant une action immédiate</li>
+            <li><strong style="color: #fd7e14;">{{ summary.high }} vulnérabilités élevées</strong> à traiter en priorité</li>
+            <li><strong style="color: #ffc107;">{{ summary.medium }} vulnérabilités moyennes</strong> à corriger à moyen terme</li>
+            <li><strong style="color: #0dcaf0;">{{ summary.low }} vulnérabilités faibles</strong> à corriger sur le long terme</li>
+        </ul>
+        
+        <h3>Recommandations Prioritaires</h3>
+        <p>
+            Les vulnérabilités critiques et élevées représentent un risque significatif pour la sécurité de l'organisation.
+            Nous recommandons vivement de traiter ces vulnérabilités dans les plus brefs délais.
+        </p>
+    </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard" class="section page-break">
+    <h1>2. Tableau de Bord</h1>
+    
+    <h2>Vue d'Ensemble par Sévérité</h2>
+    <div class="dashboard">
+        <div class="stat-card critical">
+            <div class="label">Critique</div>
+            <div class="number">{{ summary.critical }}</div>
+        </div>
+        <div class="stat-card high">
+            <div class="label">Élevée</div>
+            <div class="number">{{ summary.high }}</div>
+        </div>
+        <div class="stat-card medium">
+            <div class="label">Moyenne</div>
+            <div class="number">{{ summary.medium }}</div>
+        </div>
+        <div class="stat-card low">
+            <div class="label">Faible</div>
+            <div class="number">{{ summary.low }}</div>
+        </div>
+    </div>
+    
+    <h2>Répartition par Outil</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Outil</th>
+                <th>Nombre de Findings</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tool, count in statistics.findings_by_tool.items() %}
+            <tr>
+                <td>{{ tool }}</td>
+                <td>{{ count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <h2>Répartition par Type</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Type de Vulnérabilité</th>
+                <th>Nombre de Findings</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for finding_type, count in statistics.findings_by_type.items() %}
+            <tr>
+                <td>{{ finding_type }}</td>
+                <td>{{ count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Findings Details -->
+<div id="findings" class="section page-break">
+    <h1>3. Détails des Vulnérabilités</h1>
+    
+    <div id="findings-by-severity">
+        <h2>3.1. Classement par Niveau de Sévérité</h2>
+        
+        <!-- Critical Findings -->
+        {% set critical_findings = findings | selectattr('severity', 'equalto', 'critical') | list %}
+        {% if critical_findings %}
+        <h3>Vulnérabilités Critiques ({{ critical_findings | length }})</h3>
+        {% for finding in critical_findings %}
+        <div class="finding critical">
+            <div class="finding-header">
+                <div>
+                    <span class="finding-id">{{ finding.id }}</span>
+                    <div class="finding-title">{{ finding.title }}</div>
+                </div>
+                <div>
+                    <span class="severity-badge critical">Critique</span>
+                    {% if finding.cvss_score %}
+                    <span class="cvss-score">CVSS {{ finding.cvss_score }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="finding-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Type:</span> {{ finding.finding_type }}
+                </div>
+                {% if finding.cve_ids %}
+                <div class="meta-item">
+                    <span class="meta-label">CVE:</span> {{ finding.cve_ids | join(', ') }}
+                </div>
+                {% endif %}
+                <div class="meta-item">
+                    <span class="meta-label">Statut:</span> {{ finding.status }}
+                </div>
+            </div>
+            
+            <div class="finding-content">
+                <div class="finding-section">
+                    <h4>📋 Description</h4>
+                    <p>{{ finding.description }}</p>
+                </div>
+                
+                {% if finding.business_impact %}
+                <div class="finding-section">
+                    <h4>💼 Impact Métier</h4>
+                    <p>{{ finding.business_impact }}</p>
+                </div>
+                {% endif %}
+                
+                {% if finding.affected_assets %}
+                <div class="finding-section">
+                    <h4>🎯 Actifs Affectés</h4>
+                    <ul>
+                        {% for asset in finding.affected_assets %}
+                        <li>{{ asset }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <div class="finding-section">
+                    <h4>🔧 Remédiation</h4>
+                    <p>{{ finding.remediation }}</p>
+                </div>
+                
+                {% if finding.evidence %}
+                <div class="finding-section">
+                    <h4>🔍 Preuve Technique</h4>
+                    <div class="evidence">{{ finding.evidence }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+        
+        <!-- High Findings -->
+        {% set high_findings = findings | selectattr('severity', 'equalto', 'high') | list %}
+        {% if high_findings %}
+        <h3>Vulnérabilités Élevées ({{ high_findings | length }})</h3>
+        {% for finding in high_findings %}
+        <div class="finding high">
+            <div class="finding-header">
+                <div>
+                    <span class="finding-id">{{ finding.id }}</span>
+                    <div class="finding-title">{{ finding.title }}</div>
+                </div>
+                <div>
+                    <span class="severity-badge high">Élevée</span>
+                    {% if finding.cvss_score %}
+                    <span class="cvss-score">CVSS {{ finding.cvss_score }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="finding-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Type:</span> {{ finding.finding_type }}
+                </div>
+                {% if finding.cve_ids %}
+                <div class="meta-item">
+                    <span class="meta-label">CVE:</span> {{ finding.cve_ids | join(', ') }}
+                </div>
+                {% endif %}
+                <div class="meta-item">
+                    <span class="meta-label">Statut:</span> {{ finding.status }}
+                </div>
+            </div>
+            
+            <div class="finding-content">
+                <div class="finding-section">
+                    <h4>📋 Description</h4>
+                    <p>{{ finding.description }}</p>
+                </div>
+                
+                {% if finding.business_impact %}
+                <div class="finding-section">
+                    <h4>💼 Impact Métier</h4>
+                    <p>{{ finding.business_impact }}</p>
+                </div>
+                {% endif %}
+                
+                {% if finding.affected_assets %}
+                <div class="finding-section">
+                    <h4>🎯 Actifs Affectés</h4>
+                    <ul>
+                        {% for asset in finding.affected_assets %}
+                        <li>{{ asset }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <div class="finding-section">
+                    <h4>🔧 Remédiation</h4>
+                    <p>{{ finding.remediation }}</p>
+                </div>
+                
+                {% if finding.evidence %}
+                <div class="finding-section">
+                    <h4>🔍 Preuve Technique</h4>
+                    <div class="evidence">{{ finding.evidence }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+        
+        <!-- Medium Findings -->
+        {% set medium_findings = findings | selectattr('severity', 'equalto', 'medium') | list %}
+        {% if medium_findings %}
+        <h3>Vulnérabilités Moyennes ({{ medium_findings | length }})</h3>
+        {% for finding in medium_findings %}
+        <div class="finding medium">
+            <div class="finding-header">
+                <div>
+                    <span class="finding-id">{{ finding.id }}</span>
+                    <div class="finding-title">{{ finding.title }}</div>
+                </div>
+                <div>
+                    <span class="severity-badge medium">Moyenne</span>
+                    {% if finding.cvss_score %}
+                    <span class="cvss-score">CVSS {{ finding.cvss_score }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="finding-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Type:</span> {{ finding.finding_type }}
+                </div>
+                {% if finding.cve_ids %}
+                <div class="meta-item">
+                    <span class="meta-label">CVE:</span> {{ finding.cve_ids | join(', ') }}
+                </div>
+                {% endif %}
+                <div class="meta-item">
+                    <span class="meta-label">Statut:</span> {{ finding.status }}
+                </div>
+            </div>
+            
+            <div class="finding-content">
+                <div class="finding-section">
+                    <h4>📋 Description</h4>
+                    <p>{{ finding.description }}</p>
+                </div>
+                
+                <div class="finding-section">
+                    <h4>🔧 Remédiation</h4>
+                    <p>{{ finding.remediation }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+        
+        <!-- Low Findings -->
+        {% set low_findings = findings | selectattr('severity', 'equalto', 'low') | list %}
+        {% if low_findings %}
+        <h3>Vulnérabilités Faibles ({{ low_findings | length }})</h3>
+        {% for finding in low_findings %}
+        <div class="finding low">
+            <div class="finding-header">
+                <div>
+                    <span class="finding-id">{{ finding.id }}</span>
+                    <div class="finding-title">{{ finding.title }}</div>
+                </div>
+                <div>
+                    <span class="severity-badge low">Faible</span>
+                    {% if finding.cvss_score %}
+                    <span class="cvss-score">CVSS {{ finding.cvss_score }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="finding-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Type:</span> {{ finding.finding_type }}
+                </div>
+            </div>
+            
+            <div class="finding-content">
+                <div class="finding-section">
+                    <h4>📋 Description</h4>
+                    <p>{{ finding.description }}</p>
+                </div>
+                
+                <div class="finding-section">
+                    <h4>🔧 Remédiation</h4>
+                    <p>{{ finding.remediation }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- Roadmap -->
+{% if include_roadmap %}
+<div id="roadmap" class="section page-break">
+    <h1>4. Plan de Remédiation</h1>
+    
+    <p>
+        Nous recommandons de traiter les vulnérabilités selon les priorités suivantes,
+        en commençant par les vulnérabilités critiques et élevées qui présentent les risques les plus importants.
+    </p>
+    
+    <div class="roadmap">
+        <div class="timeline">
+            {% if summary.critical > 0 %}
+            <div class="timeline-item priority-high">
+                <h3>Phase 1 - Immédiat (0-2 semaines)</h3>
+                <p><strong>{{ summary.critical }} vulnérabilités critiques</strong></p>
+                <p>
+                    Correction urgente des vulnérabilités critiques qui peuvent permettre une compromission
+                    complète du système ou une fuite de données sensibles.
+                </p>
+            </div>
+            {% endif %}
+            
+            {% if summary.high > 0 %}
+            <div class="timeline-item priority-high">
+                <h3>Phase 2 - Prioritaire (2-4 semaines)</h3>
+                <p><strong>{{ summary.high }} vulnérabilités élevées</strong></p>
+                <p>
+                    Traitement des vulnérabilités élevées qui représentent un risque significatif
+                    pour la sécurité de l'infrastructure.
+                </p>
+            </div>
+            {% endif %}
+            
+            {% if summary.medium > 0 %}
+            <div class="timeline-item priority-medium">
+                <h3>Phase 3 - Moyen terme (1-2 mois)</h3>
+                <p><strong>{{ summary.medium }} vulnérabilités moyennes</strong></p>
+                <p>
+                    Correction des vulnérabilités moyennes dans le cadre d'un plan de renforcement
+                    de la posture de sécurité globale.
+                </p>
+            </div>
+            {% endif %}
+            
+            {% if summary.low > 0 %}
+            <div class="timeline-item">
+                <h3>Phase 4 - Long terme (2-3 mois)</h3>
+                <p><strong>{{ summary.low }} vulnérabilités faibles</strong></p>
+                <p>
+                    Correction des vulnérabilités faibles dans le cadre de l'amélioration continue
+                    de la sécurité.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Appendix -->
+{% if include_appendix %}
+<div id="appendix" class="appendix section page-break">
+    <h1>5. Annexes Techniques</h1>
+    
+    <h2>5.1. Échelle de Sévérité CVSS</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Score CVSS</th>
+                <th>Niveau</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>9.0 - 10.0</td>
+                <td><span class="severity-badge critical">Critique</span></td>
+                <td>Vulnérabilité permettant une compromission complète du système</td>
+            </tr>
+            <tr>
+                <td>7.0 - 8.9</td>
+                <td><span class="severity-badge high">Élevée</span></td>
+                <td>Vulnérabilité présentant un risque significatif pour la sécurité</td>
+            </tr>
+            <tr>
+                <td>4.0 - 6.9</td>
+                <td><span class="severity-badge medium">Moyenne</span></td>
+                <td>Vulnérabilité nécessitant une attention mais avec impact limité</td>
+            </tr>
+            <tr>
+                <td>0.1 - 3.9</td>
+                <td><span class="severity-badge low">Faible</span></td>
+                <td>Vulnérabilité avec impact minimal sur la sécurité</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>5.2. Outils Utilisés</h2>
+    <ul>
+        {% for tool in statistics.findings_by_tool.keys() %}
+        <li>{{ tool }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h2>5.3. Glossaire</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Terme</th>
+                <th>Définition</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>CVE</td>
+                <td>Common Vulnerabilities and Exposures - Identifiant unique pour une vulnérabilité connue</td>
+            </tr>
+            <tr>
+                <td>CVSS</td>
+                <td>Common Vulnerability Scoring System - Système de notation de la sévérité des vulnérabilités</td>
+            </tr>
+            <tr>
+                <td>Pentest</td>
+                <td>Test d'intrusion - Évaluation de la sécurité par simulation d'attaque</td>
+            </tr>
+            <tr>
+                <td>Hash</td>
+                <td>Empreinte cryptographique d'un mot de passe ou d'une donnée</td>
+            </tr>
+            <tr>
+                <td>Active Directory</td>
+                <td>Service d'annuaire Microsoft pour la gestion centralisée des identités</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>5.4. Disclaimer Légal</h2>
+    <div class="executive-summary">
+        <p>
+            Ce rapport contient des informations confidentielles destinées exclusivement à <strong>{{ audit_metadata.client_name }}</strong>.
+            Toute divulgation, reproduction ou distribution à des tiers est strictement interdite sans autorisation écrite préalable.
+        </p>
+        <p>
+            Les informations contenues dans ce rapport reflètent l'état de la sécurité au moment de l'audit
+            ({{ audit_metadata.audit_date }} - {{ audit_metadata.audit_end_date }}).
+        </p>
+        <p>
+            <strong>Contact:</strong> {{ audit_metadata.contact_client }}
+        </p>
+    </div>
+</div>
+{% endif %}
+
+</body>
+</html>

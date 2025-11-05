@@ -1,0 +1,147 @@
+{
+  "audit_metadata": {
+    "client_name": "ACME Corp",
+    "audit_date": "2025-11-05",
+    "audit_end_date": "2025-11-06",
+    "audit_type": "Pentest Externe + Interne",
+    "scope": [
+      "192.168.1.0/24",
+      "172.16.5.0/24",
+      "example.com"
+    ],
+    "testeurs": [
+      "Alice Dupont",
+      "Bob Martin"
+    ],
+    "contact_client": "ciso@acme.com"
+  },
+  "findings": [
+    {
+      "id": "VULN-001",
+      "title": "Identification de Credentials Valides via Kerbrute",
+      "severity": "critical",
+      "cvss_score": 9.1,
+      "cve_ids": [],
+      "finding_type": "Configuration Error - Weak Password",
+      "description": "Une attaque par pulvérisation de mot de passe (password spray) a permis d'identifier des comptes utilisateurs avec des mots de passe faibles dans le domaine Active Directory. Cette vulnérabilité critique permet à un attaquant d'obtenir un accès initial au réseau d'entreprise.\n\nL'outil Kerbrute a été utilisé pour tester des mots de passe communs contre une liste d'utilisateurs valides. Le compte 'sgage@inlanefreight.local' utilise le mot de passe 'Welcome1', un mot de passe extrêmement faible et prévisible.\n\nCette faiblesse représente un risque majeur car elle permet à un attaquant externe ou interne de compromettre des comptes légitimes sans déclencher de verrouillage de compte, la pulvérisation de mots de passe étant une technique furtive.",
+      "remediation": "1. Réinitialiser immédiatement le mot de passe du compte 'sgage@inlanefreight.local'\n2. Mettre en place une politique de mots de passe forte (minimum 12 caractères, complexité requise)\n3. Implémenter une solution de détection de pulvérisation de mots de passe (Azure AD Identity Protection ou équivalent)\n4. Sensibiliser les utilisateurs aux bonnes pratiques de sécurité\n5. Activer l'authentification multi-facteurs (MFA) pour tous les comptes\n6. Effectuer un audit complet des mots de passe avec un outil comme DPAT ou similaire",
+      "business_impact": "Un attaquant ayant obtenu ces identifiants peut accéder aux ressources internes de l'entreprise, potentiellement conduisant à : une exfiltration de données sensibles, un mouvement latéral dans le réseau, une élévation de privilèges, et une compromission complète du domaine Active Directory.",
+      "source_data": {
+        "tool": "kerbrute",
+        "command": "kerbrute passwordspray -d inlanefreight.local --dc 172.16.5.5 valid_users.txt Welcome1",
+        "raw_output": "[+] VALID LOGIN: sgage@inlanefreight.local:Welcome1"
+      },
+      "affected_assets": [
+        "sgage@inlanefreight.local"
+      ],
+      "evidence": "[+] VALID LOGIN: sgage@inlanefreight.local:Welcome1",
+      "status": "open"
+    },
+    {
+      "id": "VULN-002",
+      "title": "Hash NTLMv2 Crackable - Mot de Passe Faible",
+      "severity": "critical",
+      "cvss_score": 8.8,
+      "cve_ids": [],
+      "finding_type": "Weak Credentials",
+      "description": "Un hash NTLMv2 capturé pour le compte 'FOREND@INLANEFREIGHT' a été cracké avec succès en utilisant un dictionnaire standard (rockyou.txt). Le mot de passe identifié est 'Klmcargo2', qui démontre une faible entropie et est vulnérable aux attaques par dictionnaire.\n\nLes hashes NTLMv2 peuvent être capturés via diverses techniques (LLMNR poisoning, SMB relay, etc.) et, s'ils sont faibles, peuvent être crackés hors ligne sans alerte pour l'organisation.\n\nLa découverte de ce mot de passe faible indique une politique de sécurité insuffisante et expose l'organisation à des risques de compromission.",
+      "remediation": "1. Réinitialiser immédiatement le mot de passe du compte FOREND\n2. Implémenter une politique de mots de passe renforcée avec vérification contre les dictionnaires communs\n3. Désactiver NTLMv1 et privilégier Kerberos pour l'authentification\n4. Mettre en place une surveillance des tentatives d'authentification suspectes\n5. Déployer une solution de gestion des mots de passe (gestionnaire de mots de passe d'entreprise)\n6. Effectuer un audit régulier de la force des mots de passe avec des outils comme DPAT",
+      "business_impact": "La compromission de ce compte permet à un attaquant de se déplacer latéralement dans le réseau, d'accéder à des ressources sensibles, et potentiellement d'élever ses privilèges pour obtenir un contrôle administratif complet du domaine.",
+      "source_data": {
+        "tool": "hashcat",
+        "command": "hashcat -m 5600 forend_ntlmv2 /usr/share/wordlists/rockyou.txt",
+        "raw_output": "FOREND::INLANEFREIGHT:...hash...:Klmcargo2",
+        "extracted_data": {
+          "user": "FOREND",
+          "domain": "INLANEFREIGHT",
+          "password": "Klmcargo2"
+        }
+      },
+      "affected_assets": [
+        "FOREND@INLANEFREIGHT"
+      ],
+      "evidence": "Hash cracké: FOREND::INLANEFREIGHT:...hash...:Klmcargo2",
+      "status": "open"
+    },
+    {
+      "id": "VULN-003",
+      "title": "Serveur SSH avec Configuration par Défaut",
+      "severity": "high",
+      "cvss_score": 7.5,
+      "cve_ids": [],
+      "finding_type": "Configuration Error",
+      "description": "Le serveur SSH sur l'hôte 192.168.1.50 port 22 autorise l'authentification par mot de passe et ne force pas l'utilisation de clés SSH. Cette configuration augmente le risque d'attaques par force brute.\n\nDe plus, le serveur utilise des algorithmes de chiffrement faibles et autorise la connexion root directe, ce qui constitue une mauvaise pratique de sécurité.",
+      "remediation": "1. Désactiver l'authentification par mot de passe dans /etc/ssh/sshd_config (PasswordAuthentication no)\n2. Forcer l'utilisation de clés SSH uniquement\n3. Désactiver la connexion root directe (PermitRootLogin no)\n4. Mettre à jour les algorithmes de chiffrement pour n'autoriser que les algorithmes modernes et sécurisés\n5. Implémenter fail2ban pour bloquer les tentatives de force brute\n6. Redémarrer le service SSH après modifications",
+      "business_impact": "Un attaquant pourrait tenter des attaques par force brute contre le service SSH, potentiellement compromettant l'accès au serveur si des mots de passe faibles sont utilisés.",
+      "source_data": {
+        "tool": "nmap",
+        "raw_output": "22/tcp open ssh OpenSSH 7.4 (protocol 2.0)\n| ssh-auth-methods: password,publickey"
+      },
+      "affected_assets": [
+        "192.168.1.50:22"
+      ],
+      "evidence": "SSH permet l'authentification par mot de passe et connexion root",
+      "status": "open"
+    },
+    {
+      "id": "VULN-004",
+      "title": "Service SMB avec Signature Désactivée",
+      "severity": "high",
+      "cvss_score": 7.1,
+      "cve_ids": [],
+      "finding_type": "Configuration Error - SMB",
+      "description": "Le service SMB sur plusieurs hôtes du réseau n'a pas la signature SMB activée de manière obligatoire. Cette configuration permet des attaques de type SMB Relay où un attaquant peut intercepter et relayer des authentifications SMB vers d'autres systèmes.",
+      "remediation": "1. Activer la signature SMB obligatoire via GPO (Computer Configuration > Windows Settings > Security Settings > Local Policies > Security Options)\n2. Configurer 'Microsoft network server: Digitally sign communications (always)' sur Enabled\n3. Configurer 'Microsoft network client: Digitally sign communications (always)' sur Enabled\n4. Redémarrer les systèmes affectés ou forcer une mise à jour de GPO\n5. Vérifier la configuration avec 'nmap --script smb-security-mode'",
+      "business_impact": "Un attaquant sur le réseau local peut intercepter des authentifications SMB et les relayer vers d'autres systèmes, permettant une compromission latérale sans connaître les mots de passe.",
+      "source_data": {
+        "tool": "crackmapexec",
+        "raw_output": "SMB signing: False"
+      },
+      "affected_assets": [
+        "192.168.1.10",
+        "192.168.1.15",
+        "192.168.1.20"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "VULN-005",
+      "title": "Base de Données Exposée sur Internet",
+      "severity": "medium",
+      "cvss_score": 6.5,
+      "cve_ids": [],
+      "finding_type": "Exposure",
+      "description": "Un serveur MySQL est accessible depuis Internet sur le port 3306 sans restriction d'accès par IP. Bien qu'une authentification soit requise, cette exposition augmente la surface d'attaque.",
+      "remediation": "1. Configurer un pare-feu pour restreindre l'accès au port 3306 uniquement aux adresses IP autorisées\n2. Utiliser un VPN ou bastion host pour l'accès administratif\n3. Si l'accès externe est nécessaire, implémenter une authentification multi-facteurs\n4. Auditer les comptes MySQL et désactiver les comptes inutilisés\n5. S'assurer que tous les mots de passe sont forts et uniques",
+      "business_impact": "L'exposition d'une base de données sur Internet augmente le risque d'attaques par force brute et d'exploitation de vulnérabilités connues dans MySQL.",
+      "source_data": {
+        "tool": "nmap",
+        "raw_output": "3306/tcp open mysql MySQL 5.7.34"
+      },
+      "affected_assets": [
+        "example.com:3306"
+      ],
+      "status": "open"
+    }
+  ],
+  "summary": {
+    "total_findings": 5,
+    "critical": 2,
+    "high": 2,
+    "medium": 1,
+    "low": 0
+  },
+  "statistics": {
+    "findings_by_tool": {
+      "kerbrute": 1,
+      "hashcat": 1,
+      "nmap": 2,
+      "crackmapexec": 1
+    },
+    "findings_by_type": {
+      "Weak Credentials": 2,
+      "Configuration Error": 2,
+      "Exposure": 1
+    }
+  }
+}
