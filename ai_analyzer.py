@@ -10,15 +10,15 @@ from typing import Dict, List, Any, Optional, Tuple
 import ollama
 from vulnerability_schema import validate_vulnerability_response, get_cvss_guidance
 
+# Constants for AI configuration
+DEFAULT_NUM_PREDICT = 2000  # Increased from default 512 to allow detailed responses
+DEFAULT_VALIDATION_PREDICT = 500  # For validation responses
+
 
 class AIAnalyzer:
     """
     Advanced AI analyzer with structured prompts and validation.
     """
-    
-    # Constants for AI configuration
-    DEFAULT_NUM_PREDICT = 2000  # Increased from default 512 to allow detailed responses
-    DEFAULT_VALIDATION_PREDICT = 500  # For validation responses
     
     def __init__(self, model: str = "llama3.2", temperature: float = 0.1):
         """
@@ -219,7 +219,7 @@ RÉPONDS MAINTENANT (JSON UNIQUEMENT):"""
                     stream=False,
                     options={
                         "temperature": self.temperature,
-                        "num_predict": self.DEFAULT_NUM_PREDICT,
+                        "num_predict": DEFAULT_NUM_PREDICT,
                         "top_p": 0.9,
                         "top_k": 40
                     }
@@ -352,7 +352,7 @@ RÉPONDS MAINTENANT (JSON UNIQUEMENT):"""
                 stream=False,
                 options={
                     "temperature": 0.1,
-                    "num_predict": self.DEFAULT_VALIDATION_PREDICT
+                    "num_predict": DEFAULT_VALIDATION_PREDICT
                 }
             )
             
