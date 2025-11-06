@@ -32,8 +32,9 @@ results/scans/*
 !results/scans/.gitkeep
 !results/scans/README.txt
 
-# Test files
+# Test files (but allow test_fricadelle.py)
 test_*.py
+!test_fricadelle.py
 test_*.html
 
 # IDE
