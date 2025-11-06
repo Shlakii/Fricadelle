@@ -1,6 +1,6 @@
 # Fricadelle - Générateur de Rapports de Pentest Professionnel
 
-🛡️ **Système automatisé de génération de rapports d'audit de sécurité** avec analyse IA des résultats de scans et génération de rapports PDF/HTML professionnels en français.
+🛡️ **Système automatisé de génération de rapports d'audit de sécurité** avec analyse IA avancée des résultats de scans et génération de rapports PDF professionnels en français.
 
 ## 📋 Table des Matières
 
@@ -16,8 +16,10 @@
 
 Fricadelle transforme automatiquement vos résultats de scans de sécurité (Nmap, Kerbrute, CrackMapExec, Nuclei, etc.) en rapports d'audit professionnels avec :
 
-- ✅ **Analyse IA intelligente** via Ollama pour identifier les vraies vulnérabilités
-- ✅ **Rapports PDF/HTML professionnels** avec design moderne
+- ✅ **Analyse IA avancée et fiable** via Ollama pour identifier les vraies vulnérabilités avec précision
+- ✅ **Validation automatique de qualité** pour garantir des descriptions détaillées et pertinentes
+- ✅ **Rapport PDF professionnel** avec design moderne et épuré
+- ✅ **Catégorisation intelligente** des vulnérabilités avec évaluation CVSS précise
 - ✅ **Structure flexible** pour tout type de scan de sécurité
 - ✅ **100% en français** pour vos clients francophones
 
@@ -27,19 +29,21 @@ Fricadelle transforme automatiquement vos résultats de scans de sécurité (Nma
 /results/scans/  (fichiers bruts: kerbrute, crackmapexec, nmap JSON, etc.)
       ↓
 [Étape 1] parse_and_enrich.py
-          - IA (Ollama) analyse VRAIMENT les résultats
+          - IA (Ollama) analyse VRAIMENT les résultats avec précision
           - Détecte si c'est UNE VULNÉRABILITÉ ou juste une info
-          - Extrait les données importantes
-          - Génère description + remédiation complète
+          - Valide la qualité des descriptions (minimum 100 caractères)
+          - Extrait les données importantes avec contexte complet
+          - Génère description + remédiation + impact métier détaillés
+          - Catégorisation intelligente et score CVSS précis
       ↓
-findings_enrichis.json (structure flexible)
+findings_enrichis.json (structure flexible validée)
       ↓
 [Étape 2] generate_report.py
           - Template Jinja2 professionnel français complet
-          - Rapport PDF beau + HTML interactif
+          - Rapport PDF avec design moderne et épuré
           - Toutes les sections (Executive, Findings, Roadmap, etc.)
       ↓
-/output/rapport.pdf + rapport.html
+/output/rapport.pdf
 ```
 
 ## 📦 Installation
@@ -85,20 +89,13 @@ python parse_and_enrich.py
 # 3. Générer le rapport
 python generate_report.py --config config.yaml
 
-# 4. Récupérer vos rapports
+# 4. Récupérer votre rapport
 # → output/rapport.pdf
-# → output/rapport.html
 ```
 
 ### Options Avancées
 
 ```bash
-# Générer seulement le PDF
-python generate_report.py --format pdf
-
-# Générer seulement le HTML
-python generate_report.py --format html
-
 # Utiliser un fichier de findings personnalisé
 python generate_report.py --findings mon_fichier.json
 
@@ -127,7 +124,6 @@ audit:
 
 report:
   language: "fr"
-  format: "both"  # pdf, html, ou both
   include_appendix: true
   include_roadmap: true
   logo_path: "assets/logo.png"
@@ -150,21 +146,20 @@ analyzer = VulnerabilityAnalyzer(
 ```
 pentest-report-generator/
 ├── config.yaml                     # Configuration de l'audit
-├── parse_and_enrich.py            # Script d'analyse IA
-├── generate_report.py             # Script de génération de rapport
+├── parse_and_enrich.py            # Script d'analyse IA avancée
+├── generate_report.py             # Script de génération de rapport PDF
 ├── requirements.txt               # Dépendances Python
 ├── README.md                      # Documentation
 ├── templates/
 │   └── rapport.html.j2           # Template Jinja2 du rapport
 ├── assets/
-│   ├── style.css                 # Styles CSS professionnels
+│   ├── style.css                 # Styles CSS modernes
 │   └── logo.png                  # Logo (placeholder)
 ├── results/
 │   ├── scans/                    # ← Vos fichiers bruts
 │   └── findings_enrichis.json    # Output de parse_and_enrich.py
 └── output/
-    ├── rapport.pdf               # Rapport final PDF
-    └── rapport.html              # Rapport final HTML
+    └── rapport.pdf               # Rapport final PDF professionnel
 ```
 
 ## 📊 Structure JSON des Findings
@@ -242,12 +237,13 @@ pentest-report-generator/
 7. **Annexes Techniques** - Glossaire, échelle CVSS, outils utilisés
 8. **Disclaimer Légal** - Mentions de confidentialité
 
-### Design
+### Design Moderne
 
-- 🎨 **Couleurs** : Cartes colorées par sévérité (rouge/orange/jaune/bleu)
-- 📄 **Pagination** : Numéros de page automatiques
+- 🎨 **Couleurs** : Dégradés modernes et cartes colorées par sévérité (gradients rouge/orange/jaune/bleu)
+- 📄 **Pagination** : Numéros de page automatiques et professionnels
 - 🔒 **Confidentialité** : En-têtes/pieds de page professionnels
-- 📱 **Responsive** : Adapté à l'impression et la lecture écran
+- 💎 **Visuel** : Ombres portées, bordures arrondies, design épuré
+- 📊 **Lisibilité** : Typographie optimisée et hiérarchie visuelle claire
 
 ## 💡 Exemples d'Utilisation
 
@@ -304,10 +300,19 @@ Le template `templates/rapport.html.j2` utilise Jinja2. Vous pouvez :
 
 Dans `parse_and_enrich.py`, vous pouvez :
 
-- Ajuster le prompt pour l'IA
-- Modifier la taille du contexte (actuellement 2000 caractères)
+- Ajuster le prompt pour l'IA (prompt détaillé avec instructions de qualité)
+- Modifier la taille du contexte (actuellement 8000 caractères)
+- Personnaliser les critères de validation (longueur minimale, champs requis)
 - Ajouter des règles de parsing spécifiques
 - Personnaliser la structure des findings
+
+**Critères de validation automatique** :
+- Description minimum 100 caractères
+- Remédiation minimum 80 caractères
+- Impact métier minimum 50 caractères
+- Sévérité valide (critical, high, medium, low)
+- Score CVSS entre 0.0 et 10.0
+- Au moins un actif affecté
 
 ## 📝 License
 
