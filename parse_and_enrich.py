@@ -150,17 +150,17 @@ INSTRUCTIONS CRITIQUES:
    - cvss_score: Score CVSS v3.1 réaliste (0.0 à 10.0)
    - cve_ids: Liste des CVE si applicable (vide [] si aucun)
    - finding_type: Catégorie précise (ex: "Weak Credentials", "Misconfiguration", "Known Vulnerability", "Information Disclosure")
-   - description: Analyse DÉTAILLÉE (minimum 200 caractères) expliquant:
+   - description: Analyse DÉTAILLÉE (minimum 100 caractères) expliquant:
      * Ce qui a été trouvé exactement
      * Pourquoi c'est une vulnérabilité
      * Comment cela peut être exploité
      * Le contexte technique complet
-   - remediation: Plan de remédiation DÉTAILLÉ (minimum 150 caractères) avec:
+   - remediation: Plan de remédiation DÉTAILLÉ (minimum 80 caractères) avec:
      * Actions immédiates à prendre
      * Étapes de correction détaillées et numérotées
      * Recommandations de configuration
      * Meilleures pratiques de sécurité
-   - business_impact: Impact métier CONCRET (minimum 100 caractères):
+   - business_impact: Impact métier CONCRET (minimum 50 caractères):
      * Conséquences pour l'entreprise
      * Risques financiers/réputationnels
      * Scénarios d'attaque réalistes
@@ -184,9 +184,9 @@ FORMAT JSON REQUIS (à respecter STRICTEMENT):
       "cvss_score": 9.5,
       "cve_ids": ["CVE-2023-1234"],
       "finding_type": "Catégorie de la vulnérabilité",
-      "description": "Description technique détaillée et complète de la vulnérabilité, expliquant le contexte, l'exploitation possible et les risques associés. Minimum 200 caractères.",
-      "remediation": "1. Action immédiate requise\n2. Étape de correction détaillée\n3. Configuration recommandée\n4. Bonnes pratiques à suivre\n5. Mesures de prévention\nMinimum 150 caractères.",
-      "business_impact": "Impact concret pour l'entreprise: description des conséquences métier, risques financiers, réputationnels et opérationnels. Scénarios d'attaque réalistes. Minimum 100 caractères.",
+      "description": "Description technique détaillée et complète de la vulnérabilité, expliquant le contexte, l'exploitation possible et les risques associés. Minimum 100 caractères.",
+      "remediation": "1. Action immédiate requise\n2. Étape de correction détaillée\n3. Configuration recommandée\n4. Bonnes pratiques à suivre\n5. Mesures de prévention\nMinimum 80 caractères.",
+      "business_impact": "Impact concret pour l'entreprise: description des conséquences métier, risques financiers, réputationnels et opérationnels. Scénarios d'attaque réalistes. Minimum 50 caractères.",
       "affected_assets": ["192.168.1.10", "user@domain.local", "hostname.domain"],
       "evidence": "Preuve technique exacte extraite des données brutes"
     }}

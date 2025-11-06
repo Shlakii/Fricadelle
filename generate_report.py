@@ -102,16 +102,19 @@ class ReportGenerator:
         output_dir = self.config.get('report', {}).get('output_dir', 'output')
         pdf_path = f"{output_dir}/rapport.pdf"
 
-        # Toujours générer le HTML en interne (nécessaire pour le PDF)
-        html_content = self.generate_html(f"{output_dir}/.rapport_temp.html")
+        # Générer le HTML en mémoire (nécessaire pour le PDF)
+        # Note: generate_html sauvegarde aussi sur disque, mais on utilise un chemin temporaire
+        # qui sera supprimé après pour éviter de laisser des fichiers HTML
+        temp_html_path = f"{output_dir}/.rapport_temp.html"
+        html_content = self.generate_html(temp_html_path)
         
         # Générer le PDF
         self.generate_pdf(html_content, pdf_path)
         
         # Supprimer le fichier HTML temporaire
-        temp_html_path = Path(f"{output_dir}/.rapport_temp.html")
-        if temp_html_path.exists():
-            temp_html_path.unlink()
+        temp_file = Path(temp_html_path)
+        if temp_file.exists():
+            temp_file.unlink()
 
         print("\n" + "="*60)
         print("📊 GÉNÉRATION DU RAPPORT TERMINÉE")
