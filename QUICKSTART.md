@@ -41,15 +41,14 @@ python parse_and_enrich.py
 ### Étape 4: Générer le rapport
 ```bash
 python generate_report.py
-# ✅ Résultat: output/rapport.pdf + output/rapport.html
+# ✅ Résultat: output/rapport.pdf
 ```
 
 ### Étape 5: Livrer au client
 ```bash
-# Récupérer les fichiers
+# Récupérer le fichier
 ls output/
 # > rapport.pdf
-# > rapport.html
 ```
 
 ## 📋 Formats de Scan Supportés
@@ -81,14 +80,11 @@ cp mon_logo.png assets/logo.png
 
 ### Format de sortie
 ```bash
-# HTML seulement
-python generate_report.py --format html
+# Générer le rapport PDF
+python generate_report.py
 
-# PDF seulement
-python generate_report.py --format pdf
-
-# Les deux (défaut)
-python generate_report.py --format both
+# Spécifier un répertoire de sortie différent
+python generate_report.py --output /mon/dossier
 ```
 
 ## 🔧 Commandes Utiles
@@ -111,21 +107,20 @@ python parse_and_enrich.py --help
 
 ```
 Fricadelle/
-├── parse_and_enrich.py       # Script d'analyse IA
-├── generate_report.py         # Script de génération
+├── parse_and_enrich.py       # Script d'analyse IA avancée
+├── generate_report.py         # Script de génération PDF
 ├── config.yaml                # Configuration
 ├── requirements.txt           # Dépendances
 ├── templates/
 │   └── rapport.html.j2       # Template Jinja2
 ├── assets/
-│   ├── style.css             # Styles CSS
+│   ├── style.css             # Styles CSS modernes
 │   └── logo.png              # Logo
 ├── results/
 │   ├── scans/                # ← VOS SCANS ICI
 │   └── findings_enrichis.json
 └── output/
-    ├── rapport.pdf           # ← RAPPORT FINAL
-    └── rapport.html
+    └── rapport.pdf           # ← RAPPORT FINAL PDF
 ```
 
 ## ❓ Problèmes Fréquents
@@ -179,7 +174,7 @@ nano config.yaml
 python parse_and_enrich.py && python generate_report.py
 
 # 5. Vérifier les résultats
-firefox output/rapport.html
+xdg-open output/rapport.pdf
 ```
 
 ## 💡 Astuces

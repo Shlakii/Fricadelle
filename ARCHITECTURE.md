@@ -7,7 +7,7 @@ Fricadelle est un système en deux étapes qui transforme automatiquement les r�
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    ÉTAPE 1: ENRICHISSEMENT                   │
-│                   (parse_and_enrich.py)                      │
+│              (parse_and_enrich.py - IA Avancée)              │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -22,18 +22,19 @@ Fricadelle est un système en deux étapes qui transforme automatiquement les r�
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  Analyse IA (Ollama)                                         │
-│  - Identifie les vraies vulnérabilités                       │
-│  - Extrait les données clés                                  │
-│  - Génère descriptions détaillées                            │
-│  - Propose des remédiations                                  │
-│  - Évalue l'impact métier                                    │
+│  Analyse IA (Ollama) avec Validation Qualité                 │
+│  - Identifie les vraies vulnérabilités (8000 chars contexte) │
+│  - Extrait les données clés avec précision                   │
+│  - Génère descriptions détaillées (min 100 chars)            │
+│  - Propose des remédiations complètes (min 80 chars)         │
+│  - Évalue l'impact métier (min 50 chars)                     │
+│  - Valide automatiquement la qualité des réponses            │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  findings_enrichis.json                                      │
-│  Structure JSON flexible avec toutes les métadonnées         │
+│  Structure JSON validée avec toutes les métadonnées          │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -44,17 +45,16 @@ Fricadelle est un système en deux étapes qui transforme automatiquement les r�
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  Template Jinja2 + CSS                                       │
+│  Template Jinja2 + CSS Moderne                               │
 │  - Mise en forme professionnelle                             │
 │  - Sections structurées                                      │
-│  - Design moderne et coloré                                  │
+│  - Design épuré avec gradients                               │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  Rapports Finaux                                             │
-│  - rapport.html (interactif)                                 │
-│  - rapport.pdf (professionnel)                               │
+│  Rapport Final PDF                                           │
+│  - rapport.pdf (professionnel et moderne)                    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -63,7 +63,7 @@ Fricadelle est un système en deux étapes qui transforme automatiquement les r�
 ### Scripts Principaux
 
 #### parse_and_enrich.py
-- **Rôle**: Analyser les scans et extraire les vulnérabilités via IA
+- **Rôle**: Analyser les scans et extraire les vulnérabilités via IA avec validation de qualité
 - **Entrée**: Fichiers dans `results/scans/`
 - **Sortie**: `results/findings_enrichis.json`
 - **Dépendances**: Ollama (serveur IA local)
@@ -71,17 +71,18 @@ Fricadelle est un système en deux étapes qui transforme automatiquement les r�
 **Fonctionnalités clés**:
 ```python
 class VulnerabilityAnalyzer:
-    - scan_directory()      # Trouve tous les fichiers
-    - parse_file()          # Parse JSON/CSV/TXT
-    - send_to_ollama()      # Analyse IA intelligente
-    - process_all_files()   # Pipeline complet
-    - save_findings()       # Sauvegarde JSON
+    - scan_directory()          # Trouve tous les fichiers
+    - parse_file()              # Parse JSON/CSV/TXT
+    - send_to_ollama()          # Analyse IA intelligente (contexte 8000 chars)
+    - validate_vulnerability()  # Validation qualité automatique
+    - process_all_files()       # Pipeline complet
+    - save_findings()           # Sauvegarde JSON
 ```
 
 #### generate_report.py
-- **Rôle**: Générer les rapports PDF/HTML à partir du JSON
+- **Rôle**: Générer le rapport PDF à partir du JSON
 - **Entrée**: `results/findings_enrichis.json` + `config.yaml`
-- **Sortie**: `output/rapport.pdf` et/ou `output/rapport.html`
+- **Sortie**: `output/rapport.pdf`
 - **Dépendances**: Jinja2, WeasyPrint
 
 **Fonctionnalités clés**:
@@ -91,7 +92,7 @@ class ReportGenerator:
     - load_findings()       # Charge findings JSON
     - generate_html()       # Génère HTML via Jinja2
     - generate_pdf()        # Convertit HTML en PDF
-    - generate_reports()    # Pipeline complet
+    - generate_reports()    # Pipeline complet (PDF uniquement)
 ```
 
 ### Fichiers de Configuration
@@ -99,7 +100,7 @@ class ReportGenerator:
 #### config.yaml
 Configuration complète de l'audit:
 - **audit**: Métadonnées client (nom, dates, périmètre, testeurs)
-- **report**: Options de génération (format, sections, logo)
+- **report**: Options de génération (sections, logo)
 
 #### requirements.txt
 Dépendances Python:
@@ -123,10 +124,11 @@ Template Jinja2 complet avec:
 - Disclaimer légal
 
 #### assets/style.css
-Feuille de style CSS professionnelle:
-- Design moderne et épuré
-- Couleurs par sévérité (rouge=critical, orange=high, etc.)
-- Cartes pour chaque finding
+Feuille de style CSS moderne et professionnelle:
+- Design épuré avec gradients
+- Couleurs par sévérité avec dégradés modernes
+- Cartes pour chaque finding avec ombres portées
+- Bordures arrondies et effets visuels
 - Responsive et print-friendly
 - Headers/footers automatiques
 
@@ -171,34 +173,42 @@ python parse_and_enrich.py
 
 ### 5. Génération du Rapport
 ```bash
-# Générer PDF + HTML
+# Générer le PDF
 python generate_report.py
 
-# OU seulement HTML
-python generate_report.py --format html
-
-# OU seulement PDF
-python generate_report.py --format pdf
+# Résultat: output/rapport.pdf
 ```
 
 ### 6. Livraison
 ```bash
-# Rapports disponibles dans output/
+# Rapport disponible dans output/
 ls output/
-# > rapport.html
 # > rapport.pdf
 ```
 
 ## 🤖 Analyse IA avec Ollama
 
-### Prompt Structure
+### Prompt Structure Amélioré
 
-Le système envoie à Ollama un prompt structuré qui:
-1. **Identifie** si le contenu contient une vulnérabilité
-2. **Extrait** les informations techniques
-3. **Génère** une description en français
-4. **Propose** une remédiation détaillée
-5. **Évalue** l'impact métier
+Le système envoie à Ollama un prompt structuré et détaillé qui:
+1. **Identifie** si le contenu contient une vulnérabilité RÉELLE (pas juste une info)
+2. **Extrait** les informations techniques avec contexte complet (8000 caractères)
+3. **Génère** une description détaillée en français (minimum 100 caractères)
+4. **Propose** une remédiation complète et actionnable (minimum 80 caractères)
+5. **Évalue** l'impact métier concret (minimum 50 caractères)
+6. **Catégorise** avec précision (severity + CVSS score)
+
+### Validation Automatique de Qualité
+
+Chaque vulnérabilité est validée automatiquement:
+- ✅ Tous les champs requis présents
+- ✅ Sévérité valide (critical/high/medium/low)
+- ✅ Score CVSS entre 0.0 et 10.0
+- ✅ Description ≥ 100 caractères
+- ✅ Remédiation ≥ 80 caractères
+- ✅ Impact métier ≥ 50 caractères
+- ✅ Au moins un actif affecté
+- ❌ Les réponses de mauvaise qualité sont rejetées
 
 ### Réponse JSON Attendue
 
@@ -220,19 +230,23 @@ Le système envoie à Ollama un prompt structuré qui:
 }
 ```
 
-### Filtrage Intelligent
+### Filtrage Intelligent Renforcé
 
 L'IA **ne remonte PAS**:
-- Les ports ouverts sans vulnérabilité
+- Les ports ouverts standards sans faille connue
 - Les informations techniques banales
-- Les services standards sans risque
+- Les services normaux sans version vulnérable
+- Les simples énumérations sans exploitation possible
 
-L'IA **remonte**:
-- Credentials valides
-- Mots de passe faibles
-- Services vulnérables (CVE)
-- Configurations dangereuses
-- Expositions non autorisées
+L'IA **remonte UNIQUEMENT**:
+- Credentials valides découverts
+- Mots de passe faibles identifiés
+- Services avec CVE exploitables
+- Configurations dangereuses (SMB signing disabled, LDAP anonymous bind, etc.)
+- Failles d'authentification ou d'autorisation
+- Exposition de données sensibles
+- Possibilité d'élévation de privilèges
+- Chemins d'attaque exploitables
 
 ## 📊 Structure JSON des Findings
 
