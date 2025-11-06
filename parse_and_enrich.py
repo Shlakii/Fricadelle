@@ -4,16 +4,20 @@
 import os
 import json
 import re
-import ollama
 from pathlib import Path
 from datetime import datetime
+from typing import List, Dict, Any
+from ai_analyzer import AIAnalyzer
 
 class VulnerabilityAnalyzer:
-    def __init__(self, scans_dir="results/scans", ollama_model="llama3.2"):
+    def __init__(self, scans_dir="results/scans", ollama_model="llama3.2", enable_validation=True):
         self.scans_dir = scans_dir
         self.model = ollama_model
         self.findings = []
         self.findings_counter = 1
+        self.enable_validation = enable_validation
+        self.analyzer = AIAnalyzer(model=ollama_model)
+        self.analysis_errors = []
 
     def scan_directory(self):
         """Scanne le dossier et récupère tous les fichiers"""
@@ -41,123 +45,69 @@ class VulnerabilityAnalyzer:
             with open(filepath, encoding='utf-8') as f:
                 return {"type": "text", "content": f.read(), "filename": filename}
 
-    def clean_json_response(self, response_text):
-        """Nettoie la réponse Ollama en retirant les backticks markdown"""
-        response_text = response_text.strip()
-
-        # Retirer les backticks si présents
-        if response_text.startswith('```'):
-            # Trouver le premier { et le dernier }
-            start = response_text.find('{')
-            end = response_text.rfind('}') + 1
-            if start != -1 and end > start:
-                response_text = response_text[start:end]
-
-        return response_text
-
-    def send_to_ollama(self, raw_data, filename):
+    def analyze_with_ai(self, raw_data: str, filename: str) -> List[Dict[str, Any]]:
         """
-        Envoie les données brutes à Ollama pour analyse intelligente.
-        L'IA doit :
-        1. Identifier si c'est une vulnérabilité
-        2. Extraire les infos clés
-        3. Générer description + remédiation
+        Analyze scan data using the improved AI analyzer.
+        
+        Args:
+            raw_data: Raw scan data to analyze
+            filename: Name of the scan file
+            
+        Returns:
+            List of validated vulnerabilities
         """
-
-        prompt = f"""Tu es un analyste cybersécurité expert. Tu dois UNIQUEMENT retourner du JSON valide.
-
-DONNÉES À ANALYSER (fichier: {filename}):
-{raw_data}
-
-CONSIGNES ABSOLUES:
-- Réponds UNIQUEMENT en JSON
-- PAS de texte explicatif
-- PAS de "Bonjour", "Voici", "D'après"
-- JUSTE le JSON brut
-
-RÈGLES DE DÉTECTION:
-1. Identifie si c'est bien une vulnérabilité.
-2. Si rien de critique, retourne: {{"vulnerabilities": []}}
-
-EXEMPLE DE FORMAT JSON REQUIS (COPIE LE FORMAT MAIS ADAPTE LE CONTENU PAR RAPPORT A LA VULNERABILITE TROUVEE):
-{{
-  "vulnerabilities": [
-    {{
-      "title": "Titre",
-      "severity": "Niveau de sévérité",
-      "cvss_score": Score CVSS,
-      "cve_ids": [],
-      "finding_type": "Type de vulnérabilité",
-      "description": "Description détaillée de la vulnérabilité",
-      "remediation": "Explication du ou des moyens de remédiations",
-      "business_impact": "Description de l'impact métier",
-      "affected_assets": ["Asset affecté par la vulnérabilité"],
-      "evidence": "Preuve que la vulnérabilité existe"
-    }}
-  ]
-}}
-
-RÉPONDS MAINTENANT (UNIQUEMENT JSON):"""
-
         try:
-            response = ollama.generate(
-                model=self.model,
-                prompt=prompt,
-                stream=False,
-                options={
-                    "temperature": 0.1,  # Rendre l'IA plus déterministe
-                    "num_predict": 800   # Limiter la longueur
-                }
+            # Use the improved AI analyzer
+            vulnerabilities, errors = self.analyzer.analyze_scan_data(
+                raw_data=raw_data,
+                filename=filename,
+                validate=self.enable_validation
             )
-
-            response_text = response['response'].strip()
-
-            # Nettoyer la réponse
-            cleaned_response = self.clean_json_response(response_text)
-
-            # Si la réponse ne commence pas par {, c'est probablement du texte
-            if not cleaned_response.startswith('{'):
-                print(f"⚠️  L'IA a répondu en texte au lieu de JSON pour {filename}")
-                print(f"   Essai de récupération...")
-                # Chercher le JSON dans la réponse
-                start = cleaned_response.find('{')
-                end = cleaned_response.rfind('}') + 1
-                if start != -1 and end > start:
-                    cleaned_response = cleaned_response[start:end]
-                else:
-                    return []
-
-            # Parse la réponse JSON
-            result = json.loads(cleaned_response)
-            return result.get('vulnerabilities', [])
-
-        except json.JSONDecodeError:
-            print(f"⚠️  Erreur parsing JSON de Ollama pour {filename}")
-            print(f"Réponse brute:\n{response['response'][:500]}...")
-            return []
+            
+            # Track any errors
+            if errors:
+                self.analysis_errors.extend(errors)
+                for error in errors:
+                    print(f"  ⚠️  {error}")
+            
+            # Enrich each vulnerability
+            enriched_vulns = []
+            for vuln in vulnerabilities:
+                enriched = self.analyzer.enrich_vulnerability(vuln)
+                enriched_vulns.append(enriched)
+            
+            return enriched_vulns
+            
         except Exception as e:
-            print(f"❌ Erreur Ollama: {e}")
+            error_msg = f"Error analyzing {filename}: {str(e)}"
+            self.analysis_errors.append(error_msg)
+            print(f"  ❌ {error_msg}")
             return []
 
     def process_all_files(self):
-        """Traite tous les fichiers du dossier"""
+        """Traite tous les fichiers du dossier avec l'analyseur amélioré"""
         files = self.scan_directory()
-        print(f"📁 Trouvé {len(files)} fichier(s)\n")
+        print(f"📁 Trouvé {len(files)} fichier(s) à analyser\n")
+        
+        if not files:
+            print("⚠️  Aucun fichier trouvé dans results/scans/")
+            print("   Placez vos fichiers de scan dans ce dossier et relancez.")
+            return self.findings
 
         for filepath in files:
-            print(f"🔍 Traitement: {os.path.basename(filepath)}")
+            print(f"🔍 Analyse: {os.path.basename(filepath)}")
 
             try:
                 parsed = self.parse_file(filepath)
 
-                # Convertir en texte pour Ollama
+                # Convertir en texte pour l'analyseur
                 if parsed['type'] == 'json':
-                    raw_text = json.dumps(parsed['content'], indent=2)[:3000]
+                    raw_text = json.dumps(parsed['content'], indent=2)[:4000]
                 else:
-                    raw_text = parsed['content'][:3000]
+                    raw_text = parsed['content'][:4000]
 
-                # Envoyer à Ollama
-                vulnerabilities = self.send_to_ollama(raw_text, parsed['filename'])
+                # Analyser avec le nouvel analyseur IA
+                vulnerabilities = self.analyze_with_ai(raw_text, parsed['filename'])
 
                 # Ajouter aux findings
                 for vuln in vulnerabilities:
@@ -177,24 +127,34 @@ RÉPONDS MAINTENANT (UNIQUEMENT JSON):"""
                         },
                         "affected_assets": vuln.get('affected_assets', []),
                         "evidence": vuln.get('evidence'),
+                        "confidence_score": vuln.get('confidence_score', 0.7),
+                        "exploitation_complexity": vuln.get('exploitation_complexity', 'medium'),
                         "status": "open"
                     }
                     self.findings.append(finding)
+                    
+                    # Display with confidence indicator
+                    confidence = vuln.get('confidence_score', 0.7)
+                    confidence_icon = "🟢" if confidence >= 0.8 else "🟡" if confidence >= 0.6 else "🔴"
+                    
+                    print(f"  ✅ {vuln.get('severity', 'unknown').upper()}: {vuln.get('title')} "
+                          f"{confidence_icon} (confiance: {confidence:.0%})")
                     self.findings_counter += 1
-                    print(f"  ✅ {vuln.get('severity').upper()}: {vuln.get('title')}")
 
                 if not vulnerabilities:
                     print(f"  ℹ️  Aucune vulnérabilité détectée")
 
             except Exception as e:
-                print(f"  ❌ Erreur: {e}")
+                error_msg = f"Erreur lors du traitement de {filepath}: {str(e)}"
+                print(f"  ❌ {error_msg}")
+                self.analysis_errors.append(error_msg)
 
             print()  # Ligne vide pour lisibilité
 
         return self.findings
 
     def save_findings(self, output_file="results/findings_enrichis.json"):
-        """Sauvegarde les findings en JSON"""
+        """Sauvegarde les findings enrichis en JSON avec métadonnées complètes"""
 
         # Calculer le summary
         summary = {
@@ -203,33 +163,50 @@ RÉPONDS MAINTENANT (UNIQUEMENT JSON):"""
             "high": len([f for f in self.findings if f['severity'] == 'high']),
             "medium": len([f for f in self.findings if f['severity'] == 'medium']),
             "low": len([f for f in self.findings if f['severity'] == 'low']),
+            "info": len([f for f in self.findings if f['severity'] == 'info']),
         }
 
         # Calculer les statistiques par outil
         findings_by_tool = {}
         findings_by_type = {}
+        avg_confidence = 0.0
 
         for finding in self.findings:
             tool = finding.get('source_data', {}).get('tool', 'unknown')
             finding_type = finding.get('finding_type', 'unknown')
+            confidence = finding.get('confidence_score', 0.7)
 
             findings_by_tool[tool] = findings_by_tool.get(tool, 0) + 1
             findings_by_type[finding_type] = findings_by_type.get(finding_type, 0) + 1
+            avg_confidence += confidence
 
+        if self.findings:
+            avg_confidence /= len(self.findings)
+
+        # Créer l'output enrichi
         output = {
             "audit_metadata": {
-                "client_name": "À définir",
+                "client_name": "À définir dans config.yaml",
                 "audit_date": datetime.now().strftime("%Y-%m-%d"),
                 "audit_type": "Pentest",
-                "scope": ["À définir"]
+                "scope": ["À définir dans config.yaml"],
+                "generation_date": datetime.now().isoformat(),
+                "analyzer_version": "2.0",
+                "ai_model": self.model
             },
             "findings": self.findings,
             "summary": summary,
             "statistics": {
                 "findings_by_tool": findings_by_tool,
-                "findings_by_type": findings_by_type
-            }
+                "findings_by_type": findings_by_type,
+                "average_confidence": round(avg_confidence, 2),
+                "total_errors": len(self.analysis_errors)
+            },
+            "analysis_errors": self.analysis_errors if self.analysis_errors else []
         }
+
+        # Créer le dossier si nécessaire
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(output, f, ensure_ascii=False, indent=2)
@@ -241,11 +218,68 @@ RÉPONDS MAINTENANT (UNIQUEMENT JSON):"""
         print(f"   🟠 High: {summary['high']}")
         print(f"   🟡 Medium: {summary['medium']}")
         print(f"   🔵 Low: {summary['low']}")
+        print(f"   ⚪ Info: {summary['info']}")
+        print(f"   🎯 Confiance moyenne: {avg_confidence:.0%}")
+        if self.analysis_errors:
+            print(f"   ⚠️  Erreurs d'analyse: {len(self.analysis_errors)}")
         print("="*60)
 
 
 # Utilisation
 if __name__ == "__main__":
-    analyzer = VulnerabilityAnalyzer()
+    import argparse
+    
+    parser = argparse.ArgumentParser(
+        description='Analyser les scans de sécurité avec IA améliorée',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Exemples d'utilisation:
+  python parse_and_enrich.py
+  python parse_and_enrich.py --scans-dir /path/to/scans
+  python parse_and_enrich.py --model llama3.2 --no-validation
+  python parse_and_enrich.py --output custom_findings.json
+        """
+    )
+    
+    parser.add_argument(
+        '--scans-dir',
+        default='results/scans',
+        help='Répertoire contenant les fichiers de scan (défaut: results/scans)'
+    )
+    
+    parser.add_argument(
+        '--model',
+        default='llama3.2',
+        help='Modèle Ollama à utiliser (défaut: llama3.2)'
+    )
+    
+    parser.add_argument(
+        '--output',
+        default='results/findings_enrichis.json',
+        help='Fichier de sortie pour les findings (défaut: results/findings_enrichis.json)'
+    )
+    
+    parser.add_argument(
+        '--no-validation',
+        action='store_true',
+        help='Désactiver la validation des vulnérabilités par l\'IA'
+    )
+    
+    args = parser.parse_args()
+    
+    print("🛡️  Fricadelle - Analyseur de Vulnérabilités Amélioré")
+    print("="*60)
+    print(f"📁 Répertoire de scans: {args.scans_dir}")
+    print(f"🤖 Modèle IA: {args.model}")
+    print(f"✅ Validation: {'Activée' if not args.no_validation else 'Désactivée'}")
+    print("="*60)
+    print()
+    
+    analyzer = VulnerabilityAnalyzer(
+        scans_dir=args.scans_dir,
+        ollama_model=args.model,
+        enable_validation=not args.no_validation
+    )
+    
     analyzer.process_all_files()
-    analyzer.save_findings()
+    analyzer.save_findings(args.output)

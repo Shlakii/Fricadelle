@@ -1,0 +1,106 @@
+{# Macros for rendering findings in the report #}
+
+{% macro render_finding(finding, severity_label) %}
+<div class="finding {{ finding.severity }}">
+    <div class="finding-header">
+        <div>
+            <span class="finding-id">{{ finding.id }}</span>
+            <div class="finding-title">{{ finding.title }}</div>
+        </div>
+        <div>
+            <span class="severity-badge {{ finding.severity }}">{{ severity_label }}</span>
+            {% if finding.cvss_score %}
+            <span class="cvss-score">CVSS {{ finding.cvss_score }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="finding-meta">
+        <div class="meta-item">
+            <span class="meta-label">Type:</span> {{ finding.finding_type }}
+        </div>
+        {% if finding.cve_ids and finding.cve_ids|length > 0 %}
+        <div class="meta-item">
+            <span class="meta-label">CVE:</span> {{ finding.cve_ids | join(', ') }}
+        </div>
+        {% endif %}
+        <div class="meta-item">
+            <span class="meta-label">Statut:</span> 
+            {% if finding.status == 'open' %}
+                <span class="status-open">Ouvert</span>
+            {% else %}
+                <span class="status-closed">Fermé</span>
+            {% endif %}
+        </div>
+        {% if finding.confidence_score %}
+        <div class="meta-item">
+            <span class="meta-label">Confiance:</span> 
+            <span class="confidence-score">{{ (finding.confidence_score * 100) | int }}%</span>
+            {% if finding.confidence_score >= 0.8 %}
+                <span class="confidence-indicator high">🟢 Élevée</span>
+            {% elif finding.confidence_score >= 0.6 %}
+                <span class="confidence-indicator medium">🟡 Moyenne</span>
+            {% else %}
+                <span class="confidence-indicator low">🔴 Faible</span>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% if finding.exploitation_complexity %}
+        <div class="meta-item">
+            <span class="meta-label">Complexité d'exploitation:</span> 
+            {% if finding.exploitation_complexity == 'low' %}
+                <span class="complexity-low">🔴 Faible</span>
+            {% elif finding.exploitation_complexity == 'medium' %}
+                <span class="complexity-medium">🟡 Moyenne</span>
+            {% else %}
+                <span class="complexity-high">🟢 Élevée</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="finding-content">
+        <div class="finding-section">
+            <h4>📋 Description</h4>
+            <p>{{ finding.description | replace('\n', '<br>') | safe }}</p>
+        </div>
+
+        {% if finding.business_impact %}
+        <div class="finding-section">
+            <h4>💼 Impact Métier</h4>
+            <p>{{ finding.business_impact | replace('\n', '<br>') | safe }}</p>
+        </div>
+        {% endif %}
+
+        {% if finding.affected_assets %}
+        <div class="finding-section">
+            <h4>🎯 Actifs Affectés ({{ finding.affected_assets | length }})</h4>
+            <ul class="affected-assets-list">
+                {% for asset in finding.affected_assets %}
+                <li><code>{{ asset }}</code></li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="finding-section">
+            <h4>🔧 Remédiation</h4>
+            <p>{{ finding.remediation | replace('\n', '<br>') | safe }}</p>
+        </div>
+
+        {% if finding.evidence %}
+        <div class="finding-section">
+            <h4>🔍 Preuve Technique</h4>
+            <div class="evidence"><pre>{{ finding.evidence }}</pre></div>
+        </div>
+        {% endif %}
+
+        {% if finding.source_data and finding.source_data.tool %}
+        <div class="finding-section source-info">
+            <h4>ℹ️ Source</h4>
+            <p><strong>Outil:</strong> <code>{{ finding.source_data.tool }}</code></p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
