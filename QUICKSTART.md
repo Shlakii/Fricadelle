@@ -14,15 +14,26 @@ pip install -r requirements.txt
 # Voir: https://ollama.ai/download
 ollama serve
 
-# 4. Télécharger un modèle IA
+# 4. Télécharger un modèle IA (RECOMMANDÉ: qwen2.5:14b)
+ollama pull qwen2.5:14b
+# OU le modèle par défaut
 ollama pull llama3.2
 ```
 
 ## 🚀 Utilisation en 5 Étapes
 
-### Étape 1: Placer vos scans
+### Étape 1: Placer vos fichiers (N'IMPORTE QUOI!)
 ```bash
+# Fricadelle accepte TOUT type de fichier:
+# - Scans automatiques (nmap, nuclei, etc.)
+# - Outputs de commandes (kerbrute, crackmapexec, etc.)
+# - Notes manuelles (observations.txt)
+# - Messages simples (findings.txt)
+# - Tout format: JSON, XML, CSV, YAML, TXT, etc.
+
 cp vos_scans/* results/scans/
+# OU créer une note manuelle:
+echo "RDP ouvert sur 192.168.1.50 sans restriction IP" > results/scans/note.txt
 ```
 
 ### Étape 2: Configurer le client
@@ -34,7 +45,12 @@ nano config.yaml
 
 ### Étape 3: Analyser avec l'IA
 ```bash
+# Avec le modèle RECOMMANDÉ (meilleure qualité)
+python parse_and_enrich.py --model qwen2.5:14b
+
+# OU avec le modèle par défaut
 python parse_and_enrich.py
+
 # ✅ Résultat: results/findings_enrichis.json
 ```
 
@@ -51,18 +67,34 @@ ls output/
 # > rapport.pdf
 ```
 
-## 📋 Formats de Scan Supportés
+## 📋 Formats de Fichiers Supportés
 
-| Outil | Format | Exemple |
-|-------|--------|---------|
-| Nmap | JSON | `nmap -sV -oJ scan.json target` |
-| Kerbrute | TXT | `kerbrute > kerbrute.txt` |
-| CrackMapExec | TXT | `crackmapexec smb 10.0.0.1 > cme.txt` |
-| Nuclei | JSON | `nuclei -json-export nuclei.json` |
-| Hashcat | TXT | `hashcat hash.txt > hashcat.txt` |
-| Custom | TXT/JSON/CSV | N'importe quel outil |
+| Type | Formats | Exemples |
+|------|---------|----------|
+| Scans Automatiques | JSON, XML | `nmap -sV -oJ scan.json target` |
+| Outputs Commandes | TXT, CSV | `kerbrute > kerbrute.txt` |
+| Notes Manuelles | TXT, MD | `echo "Trouvé SQLi sur /login" > note.txt` |
+| Messages Simples | TXT | `echo "Admin/admin marche sur FTP" > msg.txt` |
+| Données Structurées | JSON, YAML, XML, CSV | Tout format structuré |
+
+**L'IA comprend et analyse INTELLIGEMMENT tout type de contenu!**
 
 ## 🎨 Personnalisation Rapide
+
+### Changer le modèle IA (RECOMMANDÉ)
+```bash
+# Voir AI_MODELS_GUIDE.md pour tous les modèles disponibles
+
+# Installer le meilleur modèle pour l'analyse de sécurité
+ollama pull qwen2.5:14b
+
+# Utiliser avec Fricadelle
+python parse_and_enrich.py --model qwen2.5:14b
+
+# OU éditer fricadelle_config.yaml:
+# ai:
+#   model: "qwen2.5:14b"
+```
 
 ### Changer le logo
 ```bash
@@ -78,12 +110,15 @@ cp mon_logo.png assets/logo.png
 # Modifier les classes .severity-badge
 ```
 
-### Format de sortie
+### Options en ligne de commande
 ```bash
-# Générer le rapport PDF
-python generate_report.py
+# Voir toutes les options
+python parse_and_enrich.py --help
 
-# Spécifier un répertoire de sortie différent
+# Exemples:
+python parse_and_enrich.py --model qwen2.5:14b --quiet
+python parse_and_enrich.py --scans-dir /path/to/scans
+python parse_and_enrich.py --output custom_findings.json
 python generate_report.py --output /mon/dossier
 ```
 
@@ -107,20 +142,25 @@ python parse_and_enrich.py --help
 
 ```
 Fricadelle/
-├── parse_and_enrich.py       # Script d'analyse IA avancée
-├── generate_report.py         # Script de génération PDF
-├── config.yaml                # Configuration
-├── requirements.txt           # Dépendances
+├── parse_and_enrich.py         # Script d'analyse IA (AMÉLIORÉ)
+├── generate_report.py          # Script de génération PDF
+├── config.yaml                 # Configuration audit/rapport
+├── fricadelle_config.yaml      # Configuration IA (NOUVEAU)
+├── requirements.txt            # Dépendances
+├── AI_MODELS_GUIDE.md          # Guide modèles IA (NOUVEAU)
+├── README.md                   # Documentation complète
+├── QUICKSTART.md               # Ce fichier
+├── ARCHITECTURE.md             # Architecture technique
 ├── templates/
-│   └── rapport.html.j2       # Template Jinja2
+│   └── rapport.html.j2        # Template Jinja2
 ├── assets/
-│   ├── style.css             # Styles CSS modernes
-│   └── logo.png              # Logo
+│   ├── style.css              # Styles CSS modernes
+│   └── logo.png               # Logo
 ├── results/
-│   ├── scans/                # ← VOS SCANS ICI
+│   ├── scans/                 # ← TOUT TYPE DE FICHIER
 │   └── findings_enrichis.json
 └── output/
-    └── rapport.pdf           # ← RAPPORT FINAL PDF
+    └── rapport.pdf            # ← RAPPORT FINAL PDF
 ```
 
 ## ❓ Problèmes Fréquents
@@ -153,25 +193,34 @@ cat results/findings_enrichis.json | jq '.findings | length'
 
 ## 📖 Documentation Complète
 
-- `README.md` - Documentation générale
+- `README.md` - Documentation générale et vue d'ensemble
+- `AI_MODELS_GUIDE.md` - **Guide complet des modèles IA** (NOUVEAU - À LIRE!)
 - `ARCHITECTURE.md` - Architecture technique détaillée
+- `fricadelle_config.yaml` - Configuration avancée de l'IA
 - `example_usage.sh` - Script d'exemple
 
 ## 🎯 Workflow Recommandé
 
 ```bash
-# 1. Effectuer les scans
+# 1. Effectuer les scans OU écrire des notes
 nmap -sV -oJ nmap.json 192.168.1.0/24
 kerbrute passwordspray -d domain.local users.txt > kerbrute.txt
 
-# 2. Copier dans results/scans/
-mv nmap.json kerbrute.txt results/scans/
+# OU créer une note manuelle:
+cat > results/scans/observations.txt << EOF
+Le serveur DC01 (192.168.1.10) a SMB signing désactivé.
+Admin/admin fonctionne sur le FTP de 192.168.1.50.
+RDP ouvert sur Internet sans restriction IP (port 3389).
+EOF
+
+# 2. Installer le meilleur modèle IA
+ollama pull qwen2.5:14b
 
 # 3. Configurer
 nano config.yaml
 
-# 4. Lancer le pipeline
-python parse_and_enrich.py && python generate_report.py
+# 4. Lancer le pipeline avec le meilleur modèle
+python parse_and_enrich.py --model qwen2.5:14b && python generate_report.py
 
 # 5. Vérifier les résultats
 xdg-open output/rapport.pdf
@@ -183,6 +232,10 @@ xdg-open output/rapport.pdf
 - **Versioning**: Dater les rapports (rapport_2025-11-05.pdf)
 - **Backup**: Sauvegarder findings_enrichis.json
 - **Confidentialité**: Ne pas commiter results/scans/ (déjà dans .gitignore)
+- **Meilleure qualité**: Utiliser `qwen2.5:14b` ou `qwen2.5:32b` (voir AI_MODELS_GUIDE.md)
+- **Notes manuelles**: Créer des fichiers TXT avec vos observations, l'IA les comprendra!
+- **Fichiers mixtes**: Mélanger scans automatiques et notes manuelles, tout fonctionne!
+- **Encodage**: Fricadelle détecte automatiquement l'encodage (UTF-8, Latin-1, etc.)
 
 ## 🤝 Support
 
