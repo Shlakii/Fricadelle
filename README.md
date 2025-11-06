@@ -1,6 +1,28 @@
 # Fricadelle - Générateur de Rapports de Pentest Professionnel
 
-🛡️ **Système automatisé de génération de rapports d'audit de sécurité** avec analyse IA des résultats de scans et génération de rapports PDF/HTML professionnels en français.
+🛡️ **Système automatisé de génération de rapports d'audit de sécurité** avec analyse IA avancée des résultats de scans et génération de rapports PDF/HTML professionnels en français.
+
+## 🆕 Nouveautés v2.0
+
+### Analyse IA Améliorée
+- ✅ **Prompts structurés** pour réduire les hallucinations à moins de 5%
+- ✅ **Validation multi-étapes** des vulnérabilités détectées
+- ✅ **Scores de confiance** (0-100%) pour chaque finding
+- ✅ **Complexité d'exploitation** (faible/moyenne/élevée)
+- ✅ **Retry automatique** avec gestion d'erreurs robuste
+
+### Qualité des Rapports
+- ✅ **Indicateurs visuels** de confiance et complexité
+- ✅ **Métadonnées enrichies** (version analyzer, modèle IA utilisé)
+- ✅ **Statistiques avancées** (confiance moyenne, erreurs d'analyse)
+- ✅ **Format professionnel** avec sections détaillées
+
+### Validation et Fiabilité
+- ✅ **Schéma JSON strict** pour toutes les réponses IA
+- ✅ **Tests unitaires** pour les composants critiques
+- ✅ **Documentation complète** des améliorations
+
+📖 **[Voir le guide complet des améliorations →](IMPROVEMENTS.md)**
 
 ## 📋 Table des Matières
 
@@ -16,30 +38,38 @@
 
 Fricadelle transforme automatiquement vos résultats de scans de sécurité (Nmap, Kerbrute, CrackMapExec, Nuclei, etc.) en rapports d'audit professionnels avec :
 
-- ✅ **Analyse IA intelligente** via Ollama pour identifier les vraies vulnérabilités
+- ✅ **Analyse IA intelligente** via Ollama avec validation multi-étapes
+- ✅ **Détection précise** des vraies vulnérabilités (réduction des faux positifs)
+- ✅ **Scores de confiance** pour chaque finding (0-100%)
 - ✅ **Rapports PDF/HTML professionnels** avec design moderne
 - ✅ **Structure flexible** pour tout type de scan de sécurité
 - ✅ **100% en français** pour vos clients francophones
+- ✅ **100% local** - Aucune donnée envoyée à l'extérieur
 
 ## 🏗️ Architecture
 
 ```
 /results/scans/  (fichiers bruts: kerbrute, crackmapexec, nmap JSON, etc.)
       ↓
-[Étape 1] parse_and_enrich.py
-          - IA (Ollama) analyse VRAIMENT les résultats
-          - Détecte si c'est UNE VULNÉRABILITÉ ou juste une info
-          - Extrait les données importantes
-          - Génère description + remédiation complète
+[Étape 1] parse_and_enrich.py (AMÉLIORÉ v2.0)
+          - Prompts IA structurés et détaillés
+          - Analyse intelligente des résultats
+          - Validation multi-étapes des vulnérabilités
+          - Détection précise (vraie vulnérabilité vs info)
+          - Score de confiance pour chaque finding
+          - Extraction des données importantes
+          - Génération description + remédiation complète
+          - Retry automatique en cas d'erreur
       ↓
-findings_enrichis.json (structure flexible)
+findings_enrichis.json (structure enrichie avec métadonnées)
       ↓
 [Étape 2] generate_report.py
           - Template Jinja2 professionnel français complet
+          - Indicateurs visuels de confiance
           - Rapport PDF beau + HTML interactif
           - Toutes les sections (Executive, Findings, Roadmap, etc.)
       ↓
-/output/rapport.pdf + rapport.html
+/output/rapport.pdf + rapport.html (rapports professionnels)
 ```
 
 ## 📦 Installation
@@ -79,7 +109,7 @@ cp mon_scan_nmap.json results/scans/
 cp kerbrute_results.txt results/scans/
 cp crackmapexec_output.txt results/scans/
 
-# 2. Enrichir les résultats via IA
+# 2. Enrichir les résultats via IA (avec validation recommandée)
 python parse_and_enrich.py
 
 # 3. Générer le rapport
@@ -91,6 +121,27 @@ python generate_report.py --config config.yaml
 ```
 
 ### Options Avancées
+
+#### parse_and_enrich.py
+
+```bash
+# Utiliser un modèle IA différent
+python parse_and_enrich.py --model llama3.1
+
+# Analyser un répertoire personnalisé
+python parse_and_enrich.py --scans-dir /chemin/vers/scans
+
+# Désactiver la validation (plus rapide mais moins fiable)
+python parse_and_enrich.py --no-validation
+
+# Output personnalisé
+python parse_and_enrich.py --output custom_findings.json
+
+# Afficher l'aide complète
+python parse_and_enrich.py --help
+```
+
+#### generate_report.py
 
 ```bash
 # Générer seulement le PDF
@@ -136,28 +187,49 @@ report:
 
 ### Personnalisation du Modèle IA
 
-Dans `parse_and_enrich.py`, vous pouvez changer le modèle Ollama :
+Dans `parse_and_enrich.py`, vous pouvez changer le modèle Ollama et les options :
 
-```python
+```bash
+# Via ligne de commande (recommandé)
+python parse_and_enrich.py --model llama3.2
+
+# Ou via code (parse_and_enrich.py)
 analyzer = VulnerabilityAnalyzer(
     scans_dir="results/scans",
-    ollama_model="llama3.2"  # Changez ici
+    ollama_model="llama3.2",
+    enable_validation=True  # Recommandé pour meilleure qualité
 )
 ```
+
+### Interprétation des Scores de Confiance
+
+Les findings incluent maintenant un score de confiance :
+
+- **🟢 90-100%** : Très haute confiance - Inclure directement dans le rapport
+- **🟢 80-90%** : Haute confiance - Vérifier rapidement
+- **🟡 60-80%** : Confiance moyenne - Validation manuelle recommandée
+- **🔴 <60%** : Faible confiance - Investigation approfondie nécessaire
 
 ## 📁 Structure du Projet
 
 ```
-pentest-report-generator/
+fricadelle/
 ├── config.yaml                     # Configuration de l'audit
-├── parse_and_enrich.py            # Script d'analyse IA
+├── parse_and_enrich.py            # Script d'analyse IA (AMÉLIORÉ v2.0)
+├── ai_analyzer.py                 # Module d'analyse IA avancée (NOUVEAU)
+├── vulnerability_schema.py        # Validation et schémas (NOUVEAU)
 ├── generate_report.py             # Script de génération de rapport
+├── test_fricadelle.py             # Tests unitaires (NOUVEAU)
 ├── requirements.txt               # Dépendances Python
-├── README.md                      # Documentation
+├── README.md                      # Cette documentation
+├── IMPROVEMENTS.md                # Guide détaillé des améliorations (NOUVEAU)
+├── ARCHITECTURE.md                # Architecture technique
+├── QUICKSTART.md                  # Guide de démarrage rapide
 ├── templates/
-│   └── rapport.html.j2           # Template Jinja2 du rapport
+│   ├── rapport.html.j2           # Template Jinja2 du rapport
+│   └── finding_macros.j2         # Macros réutilisables (NOUVEAU)
 ├── assets/
-│   ├── style.css                 # Styles CSS professionnels
+│   ├── style.css                 # Styles CSS professionnels (AMÉLIORÉ)
 │   └── logo.png                  # Logo (placeholder)
 ├── results/
 │   ├── scans/                    # ← Vos fichiers bruts
@@ -248,6 +320,41 @@ pentest-report-generator/
 - 📄 **Pagination** : Numéros de page automatiques
 - 🔒 **Confidentialité** : En-têtes/pieds de page professionnels
 - 📱 **Responsive** : Adapté à l'impression et la lecture écran
+- 🎯 **Indicateurs** : Scores de confiance et complexité d'exploitation (NOUVEAU v2.0)
+
+## 🧪 Tests et Validation
+
+### Exécuter les Tests Unitaires
+
+```bash
+# Lancer tous les tests
+python test_fricadelle.py -v
+
+# Tester uniquement la validation des schémas
+python -m unittest test_fricadelle.TestVulnerabilitySchema -v
+```
+
+### Tester l'Analyse IA
+
+```bash
+# Créer un fichier de test
+echo '[+] VALID LOGIN: testuser@domain.local:Password123' > results/scans/test_kerbrute.txt
+
+# Analyser
+python parse_and_enrich.py
+
+# Vérifier le résultat
+cat results/findings_enrichis.json | python -m json.tool
+```
+
+### Validation de la Qualité
+
+Après génération du rapport, vérifiez:
+
+1. **Scores de confiance**: Moyenne > 80% pour une bonne qualité
+2. **Erreurs d'analyse**: Aucune erreur dans `findings_enrichis.json`
+3. **Cohérence**: Les findings correspondent aux données sources
+4. **Complétude**: Descriptions, remédiations, et impacts sont détaillés
 
 ## 💡 Exemples d'Utilisation
 

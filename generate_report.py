@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML
+from typing import Dict, Any, List
 
 class ReportGenerator:
     def __init__(self, config_path="config.yaml", findings_path="results/findings_enrichis.json"):
@@ -15,6 +16,7 @@ class ReportGenerator:
         self.findings_path = findings_path
         self.config = self.load_config()
         self.findings_data = self.load_findings()
+        self.validate_data()
 
     def load_config(self):
         """Charge la configuration depuis config.yaml"""
@@ -25,12 +27,65 @@ class ReportGenerator:
         """Charge les findings enrichis depuis le JSON"""
         with open(self.findings_path, 'r', encoding='utf-8') as f:
             return json.load(f)
+    
+    def validate_data(self):
+        """Valide que les données nécessaires sont présentes"""
+        if 'findings' not in self.findings_data:
+            print("⚠️  Attention: Aucun 'findings' trouvé dans le fichier JSON")
+            self.findings_data['findings'] = []
+        
+        if 'summary' not in self.findings_data:
+            print("⚠️  Génération du summary...")
+            self.findings_data['summary'] = self._generate_summary()
+        
+        if 'statistics' not in self.findings_data:
+            print("⚠️  Génération des statistiques...")
+            self.findings_data['statistics'] = self._generate_statistics()
+    
+    def _generate_summary(self) -> Dict[str, int]:
+        """Génère un summary à partir des findings"""
+        findings = self.findings_data.get('findings', [])
+        return {
+            "total_findings": len(findings),
+            "critical": len([f for f in findings if f.get('severity') == 'critical']),
+            "high": len([f for f in findings if f.get('severity') == 'high']),
+            "medium": len([f for f in findings if f.get('severity') == 'medium']),
+            "low": len([f for f in findings if f.get('severity') == 'low']),
+            "info": len([f for f in findings if f.get('severity') == 'info']),
+        }
+    
+    def _generate_statistics(self) -> Dict[str, Any]:
+        """Génère des statistiques à partir des findings"""
+        findings = self.findings_data.get('findings', [])
+        
+        findings_by_tool = {}
+        findings_by_type = {}
+        
+        for finding in findings:
+            tool = finding.get('source_data', {}).get('tool', 'unknown')
+            finding_type = finding.get('finding_type', 'unknown')
+            
+            findings_by_tool[tool] = findings_by_tool.get(tool, 0) + 1
+            findings_by_type[finding_type] = findings_by_type.get(finding_type, 0) + 1
+        
+        return {
+            "findings_by_tool": findings_by_tool,
+            "findings_by_type": findings_by_type
+        }
 
     def generate_html(self, output_path="output/rapport.html"):
         """Génère le rapport HTML à partir du template Jinja2"""
 
         # Configuration de Jinja2
         env = Environment(loader=FileSystemLoader('templates'))
+        
+        # Ajouter des filtres personnalisés
+        def format_percentage(value):
+            """Format a decimal as percentage"""
+            return f"{int(value * 100)}%"
+        
+        env.filters['percentage'] = format_percentage
+        
         template = env.get_template('rapport.html.j2')
 
         # Lire le CSS pour l'inclure inline
@@ -52,7 +107,9 @@ class ReportGenerator:
             'include_appendix': self.config.get('report', {}).get('include_appendix', True),
             'include_roadmap': self.config.get('report', {}).get('include_roadmap', True),
             'logo_path': self.config.get('report', {}).get('logo_path', ''),
-            'css_content': css_content  # ✨ Ajout du CSS dans le contexte
+            'css_content': css_content,
+            'analyzer_version': self.findings_data.get('audit_metadata', {}).get('analyzer_version', '1.0'),
+            'ai_model': self.findings_data.get('audit_metadata', {}).get('ai_model', 'Unknown')
         }
 
         # Mettre à jour les métadonnées depuis config si nécessaire
@@ -113,15 +170,33 @@ class ReportGenerator:
         if report_format in ['pdf', 'both']:
             self.generate_pdf(html_content, pdf_path)
 
+        # Display summary
         print("\n" + "="*60)
         print("📊 GÉNÉRATION DU RAPPORT TERMINÉE")
         print("="*60)
         print(f"Client: {self.findings_data.get('audit_metadata', {}).get('client_name', 'N/A')}")
-        print(f"Total Findings: {self.findings_data.get('summary', {}).get('total_findings', 0)}")
-        print(f"  - Critical: {self.findings_data.get('summary', {}).get('critical', 0)}")
-        print(f"  - High: {self.findings_data.get('summary', {}).get('high', 0)}")
-        print(f"  - Medium: {self.findings_data.get('summary', {}).get('medium', 0)}")
-        print(f"  - Low: {self.findings_data.get('summary', {}).get('low', 0)}")
+        print(f"Type: {self.findings_data.get('audit_metadata', {}).get('audit_type', 'N/A')}")
+        
+        summary = self.findings_data.get('summary', {})
+        print(f"\nTotal Findings: {summary.get('total_findings', 0)}")
+        print(f"  🔴 Critical: {summary.get('critical', 0)}")
+        print(f"  🟠 High: {summary.get('high', 0)}")
+        print(f"  🟡 Medium: {summary.get('medium', 0)}")
+        print(f"  🔵 Low: {summary.get('low', 0)}")
+        print(f"  ⚪ Info: {summary.get('info', 0)}")
+        
+        # Display average confidence if available
+        stats = self.findings_data.get('statistics', {})
+        if 'average_confidence' in stats:
+            avg_conf = stats['average_confidence']
+            print(f"\n🎯 Confiance moyenne: {int(avg_conf * 100)}%")
+        
+        # Display analyzer info if available
+        metadata = self.findings_data.get('audit_metadata', {})
+        if 'analyzer_version' in metadata:
+            print(f"\n🔧 Analyseur: v{metadata.get('analyzer_version', '1.0')}")
+            print(f"🤖 Modèle IA: {metadata.get('ai_model', 'Unknown')}")
+        
         print("="*60)
 
 
