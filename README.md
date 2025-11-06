@@ -2,6 +2,17 @@
 
 🛡️ **Système automatisé de génération de rapports d'audit de sécurité** avec analyse IA avancée des résultats de scans et génération de rapports PDF professionnels en français.
 
+## ✨ Nouveautés et Améliorations
+
+- ✅ **Analyse universelle**: Accepte N'IMPORTE quel type de fichier (JSON, XML, CSV, YAML, TXT, etc.)
+- ✅ **Intelligence contextuelle**: L'IA comprend les notes manuelles, commandes, et messages simples
+- ✅ **Détection automatique d'encodage**: Support de tous les encodages de fichiers
+- ✅ **Configuration flexible**: Fichier de configuration pour personnaliser l'IA et les paramètres
+- ✅ **Modèles IA recommandés**: Guide complet des meilleurs modèles (Qwen2.5, Llama3, Mistral)
+- ✅ **Gestion d'erreurs robuste**: Traitement résilient avec logs détaillés
+- ✅ **Mode verbeux**: Suivi en temps réel du traitement avec emojis
+- ✅ **Arguments en ligne de commande**: Configuration facile via CLI
+
 ## 📋 Table des Matières
 
 - [Vue d'ensemble](#vue-densemble)
@@ -14,27 +25,35 @@
 
 ## 🎯 Vue d'ensemble
 
-Fricadelle transforme automatiquement vos résultats de scans de sécurité (Nmap, Kerbrute, CrackMapExec, Nuclei, etc.) en rapports d'audit professionnels avec :
+Fricadelle transforme **N'IMPORTE QUEL type de données de sécurité** en rapports d'audit professionnels avec :
 
-- ✅ **Analyse IA avancée et fiable** via Ollama pour identifier les vraies vulnérabilités avec précision
+- ✅ **Analyse IA universelle** - Accepte tout type de fichier: scans automatiques, commandes manuelles, notes textuelles, ou même de simples messages
+- ✅ **Intelligence contextuelle avancée** via Ollama pour comprendre et analyser n'importe quel format
+- ✅ **Détection automatique d'encodage** pour supporter tous les fichiers (UTF-8, Latin-1, etc.)
 - ✅ **Validation automatique de qualité** pour garantir des descriptions détaillées et pertinentes
+- ✅ **Modèles IA optimisés** - Guide complet pour choisir le meilleur modèle (Qwen2.5, Llama3, Mistral)
 - ✅ **Rapport PDF professionnel** avec design moderne et épuré
 - ✅ **Catégorisation intelligente** des vulnérabilités avec évaluation CVSS précise
-- ✅ **Structure flexible** pour tout type de scan de sécurité
+- ✅ **Structure flexible** pour tout type de scan de sécurité ou observation manuelle
 - ✅ **100% en français** pour vos clients francophones
+- ✅ **Configuration YAML** pour personnaliser tous les aspects de l'analyse
 
 ## 🏗️ Architecture
 
 ```
-/results/scans/  (fichiers bruts: kerbrute, crackmapexec, nmap JSON, etc.)
+/results/scans/  (N'IMPORTE QUEL fichier: scans, commandes, notes, messages, etc.)
       ↓
 [Étape 1] parse_and_enrich.py
-          - IA (Ollama) analyse VRAIMENT les résultats avec précision
+          - Détection automatique d'encodage (UTF-8, Latin-1, etc.)
+          - Support universel: JSON, XML, CSV, YAML, TXT, et plus
+          - IA (Ollama) analyse INTELLIGEMMENT tout type de contenu
           - Détecte si c'est UNE VULNÉRABILITÉ ou juste une info
+          - Comprend les notes manuelles et observations du pentester
           - Valide la qualité des descriptions (minimum 100 caractères)
           - Extrait les données importantes avec contexte complet
           - Génère description + remédiation + impact métier détaillés
           - Catégorisation intelligente et score CVSS précis
+          - Gestion d'erreurs robuste avec logs détaillés
       ↓
 findings_enrichis.json (structure flexible validée)
       ↓
@@ -96,16 +115,31 @@ python generate_report.py --config config.yaml
 ### Options Avancées
 
 ```bash
-# Utiliser un fichier de findings personnalisé
+# Utiliser un modèle IA spécifique (RECOMMANDÉ: qwen2.5:14b)
+python parse_and_enrich.py --model qwen2.5:14b
+
+# Mode silencieux
+python parse_and_enrich.py --quiet
+
+# Dossier de scans personnalisé
+python parse_and_enrich.py --scans-dir /path/to/scans
+
+# Fichier de sortie personnalisé
+python parse_and_enrich.py --output custom_findings.json
+
+# Générer le rapport avec un fichier de findings personnalisé
 python generate_report.py --findings mon_fichier.json
 
 # Spécifier un répertoire de sortie différent
 python generate_report.py --output /tmp/rapports
+
+# Afficher l'aide et voir tous les modèles recommandés
+python parse_and_enrich.py --help
 ```
 
 ## ⚙️ Configuration
 
-### config.yaml
+### config.yaml (Configuration du Rapport)
 
 ```yaml
 audit:
@@ -130,36 +164,76 @@ report:
   output_dir: "output"
 ```
 
+### fricadelle_config.yaml (Configuration de l'Analyse IA)
+
+```yaml
+# Configuration de l'IA
+ai:
+  model: "qwen2.5:14b"  # Modèle recommandé (voir AI_MODELS_GUIDE.md)
+  temperature: 0.3
+  max_tokens: 3000
+
+# Configuration des chemins
+paths:
+  scans_directory: "results/scans"
+  output_file: "results/findings_enrichis.json"
+
+# Configuration de l'analyse
+analysis:
+  max_context_size: 8000
+  validation:
+    min_description_length: 100
+    min_remediation_length: 80
+    min_business_impact_length: 50
+```
+
 ### Personnalisation du Modèle IA
 
-Dans `parse_and_enrich.py`, vous pouvez changer le modèle Ollama :
+Fricadelle supporte maintenant de **nombreux modèles IA** via Ollama. Consultez le [Guide des Modèles IA](AI_MODELS_GUIDE.md) pour choisir le meilleur modèle selon vos besoins.
 
-```python
-analyzer = VulnerabilityAnalyzer(
-    scans_dir="results/scans",
-    ollama_model="llama3.2"  # Changez ici
-)
+**Modèles recommandés** (par ordre de qualité):
+1. **qwen2.5:14b** - EXCELLENT pour l'analyse de sécurité ⭐⭐⭐⭐⭐
+2. **llama3.2** - Très bon, équilibré (défaut) ⭐⭐⭐⭐
+3. **mistral:7b** - Bon, rapide, excellent en français ⭐⭐⭐⭐
+4. **codellama:13b** - Spécialisé analyse technique ⭐⭐⭐⭐
+
+```bash
+# Installer un modèle recommandé
+ollama pull qwen2.5:14b
+
+# Utiliser avec Fricadelle
+python parse_and_enrich.py --model qwen2.5:14b
 ```
+
+Voir [AI_MODELS_GUIDE.md](AI_MODELS_GUIDE.md) pour le guide complet.
 
 ## 📁 Structure du Projet
 
 ```
-pentest-report-generator/
-├── config.yaml                     # Configuration de l'audit
-├── parse_and_enrich.py            # Script d'analyse IA avancée
-├── generate_report.py             # Script de génération de rapport PDF
-├── requirements.txt               # Dépendances Python
-├── README.md                      # Documentation
+fricadelle/
+├── config.yaml                     # Configuration de l'audit et du rapport
+├── fricadelle_config.yaml          # Configuration de l'analyse IA (NOUVEAU)
+├── parse_and_enrich.py             # Script d'analyse IA avancée et flexible
+├── generate_report.py              # Script de génération de rapport PDF
+├── requirements.txt                # Dépendances Python
+├── README.md                       # Documentation principale
+├── AI_MODELS_GUIDE.md              # Guide des modèles IA (NOUVEAU)
+├── QUICKSTART.md                   # Guide de démarrage rapide
+├── ARCHITECTURE.md                 # Documentation architecture
 ├── templates/
-│   └── rapport.html.j2           # Template Jinja2 du rapport
+│   └── rapport.html.j2            # Template Jinja2 du rapport
 ├── assets/
-│   ├── style.css                 # Styles CSS modernes
-│   └── logo.png                  # Logo (placeholder)
+│   ├── style.css                  # Styles CSS modernes
+│   └── logo.png                   # Logo (placeholder)
 ├── results/
-│   ├── scans/                    # ← Vos fichiers bruts
-│   └── findings_enrichis.json    # Output de parse_and_enrich.py
+│   ├── scans/                     # ← TOUT TYPE DE FICHIER accepté
+│   │   ├── nmap.json              # Scans automatiques
+│   │   ├── kerbrute.txt           # Outputs de commandes
+│   │   ├── notes.txt              # Notes manuelles
+│   │   └── message.txt            # Messages simples
+│   └── findings_enrichis.json     # Output de parse_and_enrich.py
 └── output/
-    └── rapport.pdf               # Rapport final PDF professionnel
+    └── rapport.pdf                # Rapport final PDF professionnel
 ```
 
 ## 📊 Structure JSON des Findings
@@ -248,18 +322,16 @@ pentest-report-generator/
 ## 💡 Exemples d'Utilisation
 
 ### Exemple 1 : Scan Nmap
-
 ```bash
 # Scanner le réseau
 nmap -sV -sC -oJ results/scans/nmap_scan.json 192.168.1.0/24
 
 # Analyser et générer le rapport
-python parse_and_enrich.py
+python parse_and_enrich.py --model qwen2.5:14b
 python generate_report.py
 ```
 
 ### Exemple 2 : Kerbrute Password Spray
-
 ```bash
 # Utiliser Kerbrute
 kerbrute passwordspray -d domain.local users.txt Password123 > results/scans/kerbrute.txt
@@ -269,20 +341,48 @@ python parse_and_enrich.py
 python generate_report.py
 ```
 
-### Exemple 3 : Multiple Tools
-
+### Exemple 3 : Notes Manuelles (NOUVEAU!)
 ```bash
-# Copier tous vos résultats
+# Créer une note manuelle
+echo "Le serveur 192.168.1.50 a RDP ouvert sur Internet sans restriction. 
+Admin/admin fonctionne sur le FTP.
+SMB signing désactivé sur le DC." > results/scans/observations.txt
+
+# L'IA comprendra et analysera ces observations!
+python parse_and_enrich.py --model qwen2.5:14b
+python generate_report.py
+```
+
+### Exemple 4 : Multiple Tools et Formats
+```bash
+# Copier tous vos résultats (TOUS FORMATS supportés)
 cp nmap.json results/scans/
 cp kerbrute.txt results/scans/
 cp crackmapexec.txt results/scans/
 cp nuclei.json results/scans/
+cp mes_notes.txt results/scans/
+cp scan_custom.xml results/scans/
 
-# L'IA analysera tous les fichiers
-python parse_and_enrich.py
+# L'IA analysera TOUS les fichiers intelligemment
+python parse_and_enrich.py --model qwen2.5:14b
 
 # Générer le rapport complet
 python generate_report.py
+```
+
+### Exemple 5 : Configuration Avancée
+```bash
+# Éditer la configuration
+nano fricadelle_config.yaml
+
+# Lancer avec paramètres personnalisés
+python parse_and_enrich.py \
+  --scans-dir /path/to/scans \
+  --model qwen2.5:14b \
+  --output custom_findings.json
+
+# Générer le rapport
+python generate_report.py --findings custom_findings.json
 ```
 
 ## 🔧 Personnalisation
@@ -298,21 +398,34 @@ Le template `templates/rapport.html.j2` utilise Jinja2. Vous pouvez :
 
 ### Modifier l'Analyse IA
 
-Dans `parse_and_enrich.py`, vous pouvez :
+**Fricadelle supporte maintenant une configuration complète via `fricadelle_config.yaml`** :
 
-- Ajuster le prompt pour l'IA (prompt détaillé avec instructions de qualité)
-- Modifier la taille du contexte (actuellement 8000 caractères)
-- Personnaliser les critères de validation (longueur minimale, champs requis)
-- Ajouter des règles de parsing spécifiques
-- Personnaliser la structure des findings
+```yaml
+ai:
+  model: "qwen2.5:14b"     # Changer le modèle IA
+  temperature: 0.2         # Plus bas = plus cohérent
+  max_tokens: 4000         # Plus haut = plus détaillé
 
-**Critères de validation automatique** :
-- Description minimum 100 caractères
-- Remédiation minimum 80 caractères
-- Impact métier minimum 50 caractères
+analysis:
+  max_context_size: 10000  # Plus de contexte pour l'IA
+  validation:
+    min_description_length: 150  # Descriptions plus longues
+```
+
+**Arguments en ligne de commande** (overrides la config):
+```bash
+python parse_and_enrich.py --model qwen2.5:14b --quiet
+```
+
+**Personnaliser les critères de validation** :
+- Description minimum 100 caractères (configurable)
+- Remédiation minimum 80 caractères (configurable)
+- Impact métier minimum 50 caractères (configurable)
 - Sévérité valide (critical, high, medium, low)
 - Score CVSS entre 0.0 et 10.0
-- Au moins un actif affecté
+- Au moins un actif affecté (flexible)
+
+**Voir aussi**: [AI_MODELS_GUIDE.md](AI_MODELS_GUIDE.md) pour choisir le meilleur modèle
 
 ## 📝 License
 

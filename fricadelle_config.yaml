@@ -1,0 +1,51 @@
+# Configuration Fricadelle - Analyse IA de vulnérabilités
+
+# Configuration de l'IA
+ai:
+  # Modèle Ollama à utiliser
+  # Recommandations par ordre de qualité:
+  # - qwen2.5:14b ou qwen2.5:32b (EXCELLENT - recommandé pour meilleure qualité)
+  # - llama3.2:latest ou llama3.1:8b (Très bon - équilibré)
+  # - mistral:7b (Bon - rapide)
+  # - codellama:13b (Bon pour analyse technique)
+  model: "llama3.2"
+  
+  # Paramètres de génération
+  temperature: 0.3  # 0.0 = déterministe, 1.0 = créatif
+  max_tokens: 3000  # Nombre maximum de tokens générés
+  top_p: 0.9
+  top_k: 40
+
+# Configuration des chemins
+paths:
+  scans_directory: "results/scans"
+  output_file: "results/findings_enrichis.json"
+  
+# Configuration de l'analyse
+analysis:
+  # Taille maximale du contexte envoyé à l'IA (en caractères)
+  max_context_size: 8000
+  
+  # Critères de validation des vulnérabilités
+  validation:
+    min_description_length: 100
+    min_remediation_length: 80
+    min_business_impact_length: 50
+    
+  # Types de fichiers à ignorer (en plus des fichiers cachés)
+  ignore_files:
+    - ".gitkeep"
+    - "README.txt"
+    - "README.md"
+    
+# Options de sortie
+output:
+  # Inclure les informations de traitement dans le JSON
+  include_processing_info: true
+  
+  # Verbosité (true = afficher tous les logs, false = mode silencieux)
+  verbose: true
+  
+  # Pretty print JSON (avec indentation)
+  pretty_json: true
+  json_indent: 2
