@@ -81,8 +81,10 @@ class ReportGenerator:
         
         # Ajouter des filtres personnalisés
         def format_percentage(value):
-            """Format a decimal as percentage"""
-            return f"{int(value * 100)}%"
+            """Format a decimal as percentage, handling None and invalid types"""
+            if isinstance(value, (int, float)):
+                return f"{int(value * 100)}%"
+            return "0%"
         
         env.filters['percentage'] = format_percentage
         

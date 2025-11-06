@@ -10,6 +10,9 @@ from typing import List, Dict, Any
 from ai_analyzer import AIAnalyzer
 
 class VulnerabilityAnalyzer:
+    # Constants
+    MAX_ANALYSIS_LENGTH = 4000  # Maximum characters to analyze per file
+    
     def __init__(self, scans_dir="results/scans", ollama_model="llama3.2", enable_validation=True):
         self.scans_dir = scans_dir
         self.model = ollama_model
@@ -102,9 +105,9 @@ class VulnerabilityAnalyzer:
 
                 # Convertir en texte pour l'analyseur
                 if parsed['type'] == 'json':
-                    raw_text = json.dumps(parsed['content'], indent=2)[:4000]
+                    raw_text = json.dumps(parsed['content'], indent=2)[:self.MAX_ANALYSIS_LENGTH]
                 else:
-                    raw_text = parsed['content'][:4000]
+                    raw_text = parsed['content'][:self.MAX_ANALYSIS_LENGTH]
 
                 # Analyser avec le nouvel analyseur IA
                 vulnerabilities = self.analyze_with_ai(raw_text, parsed['filename'])

@@ -16,6 +16,10 @@ class AIAnalyzer:
     Advanced AI analyzer with structured prompts and validation.
     """
     
+    # Constants for AI configuration
+    DEFAULT_NUM_PREDICT = 2000  # Increased from default 512 to allow detailed responses
+    DEFAULT_VALIDATION_PREDICT = 500  # For validation responses
+    
     def __init__(self, model: str = "llama3.2", temperature: float = 0.1):
         """
         Initialize the AI analyzer.
@@ -188,27 +192,23 @@ RÉPONDS MAINTENANT (JSON UNIQUEMENT):"""
         
         return prompt
     
-    def analyze_scan_data(
+    def _detect_vulnerabilities(
         self,
         raw_data: str,
-        filename: str,
-        validate: bool = True
+        filename: str
     ) -> Tuple[List[Dict[str, Any]], List[str]]:
         """
-        Analyze scan data with structured multi-step approach.
+        Detect vulnerabilities using AI analysis.
         
         Args:
             raw_data: Raw scan data to analyze
             filename: Name of the scan file
-            validate: Whether to validate detected vulnerabilities
             
         Returns:
             Tuple of (vulnerabilities_list, errors_list)
         """
-        vulnerabilities = []
         errors = []
         
-        # Step 1: Initial detection
         for attempt in range(self.max_retries):
             try:
                 detection_prompt = self._build_detection_prompt(raw_data, filename)
@@ -219,7 +219,7 @@ RÉPONDS MAINTENANT (JSON UNIQUEMENT):"""
                     stream=False,
                     options={
                         "temperature": self.temperature,
-                        "num_predict": 2000,  # Increased for detailed responses
+                        "num_predict": self.DEFAULT_NUM_PREDICT,
                         "top_p": 0.9,
                         "top_k": 40
                     }
@@ -250,26 +250,7 @@ RÉPONDS MAINTENANT (JSON UNIQUEMENT):"""
                     else:
                         return [], errors
                 
-                vulnerabilities = result.get('vulnerabilities', [])
-                
-                # Step 2: Validate each vulnerability if requested
-                if validate and vulnerabilities:
-                    validated_vulns = []
-                    for vuln in vulnerabilities:
-                        validation_result = self._validate_vulnerability(vuln, raw_data)
-                        if validation_result['is_valid']:
-                            # Add confidence score
-                            vuln['confidence_score'] = validation_result.get('confidence', 0.8)
-                            validated_vulns.append(vuln)
-                        else:
-                            errors.append(
-                                f"Vulnerability '{vuln.get('title', 'Unknown')}' failed validation: "
-                                f"{', '.join(validation_result.get('issues', []))}"
-                            )
-                    
-                    return validated_vulns, errors
-                
-                return vulnerabilities, errors
+                return result.get('vulnerabilities', []), errors
                 
             except json.JSONDecodeError as e:
                 errors.append(f"JSON parsing error on attempt {attempt + 1}: {str(e)}")
@@ -281,6 +262,71 @@ RÉPONDS MAINTENANT (JSON UNIQUEMENT):"""
                     continue
         
         return [], errors
+    
+    def _validate_vulnerabilities(
+        self,
+        vulnerabilities: List[Dict[str, Any]],
+        raw_data: str
+    ) -> Tuple[List[Dict[str, Any]], List[str]]:
+        """
+        Validate detected vulnerabilities.
+        
+        Args:
+            vulnerabilities: List of vulnerabilities to validate
+            raw_data: Original raw data
+            
+        Returns:
+            Tuple of (validated_vulnerabilities, errors_list)
+        """
+        validated_vulns = []
+        errors = []
+        
+        for vuln in vulnerabilities:
+            validation_result = self._validate_vulnerability(vuln, raw_data)
+            if validation_result['is_valid']:
+                # Add confidence score
+                vuln['confidence_score'] = validation_result.get('confidence', 0.8)
+                validated_vulns.append(vuln)
+            else:
+                errors.append(
+                    f"Vulnerability '{vuln.get('title', 'Unknown')}' failed validation: "
+                    f"{', '.join(validation_result.get('issues', []))}"
+                )
+        
+        return validated_vulns, errors
+    
+    def analyze_scan_data(
+        self,
+        raw_data: str,
+        filename: str,
+        validate: bool = True
+    ) -> Tuple[List[Dict[str, Any]], List[str]]:
+        """
+        Analyze scan data with structured multi-step approach.
+        
+        Args:
+            raw_data: Raw scan data to analyze
+            filename: Name of the scan file
+            validate: Whether to validate detected vulnerabilities
+            
+        Returns:
+            Tuple of (vulnerabilities_list, errors_list)
+        """
+        # Step 1: Initial detection
+        vulnerabilities, errors = self._detect_vulnerabilities(raw_data, filename)
+        
+        if not vulnerabilities:
+            return [], errors
+        
+        # Step 2: Validate each vulnerability if requested
+        if validate:
+            validated_vulns, validation_errors = self._validate_vulnerabilities(
+                vulnerabilities, raw_data
+            )
+            errors.extend(validation_errors)
+            return validated_vulns, errors
+        
+        return vulnerabilities, errors
     
     def _validate_vulnerability(
         self,
@@ -306,7 +352,7 @@ RÉPONDS MAINTENANT (JSON UNIQUEMENT):"""
                 stream=False,
                 options={
                     "temperature": 0.1,
-                    "num_predict": 500
+                    "num_predict": self.DEFAULT_VALIDATION_PREDICT
                 }
             )
             
