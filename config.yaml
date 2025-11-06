@@ -14,7 +14,6 @@ audit:
 
 report:
   language: "fr"
-  format: "both"  # pdf, html, ou both
   include_appendix: true
   include_roadmap: true
   logo_path: "assets/logo.png"

@@ -55,6 +55,63 @@ class VulnerabilityAnalyzer:
 
         return response_text
 
+    def validate_vulnerability(self, vuln, filename):
+        """Valide qu'une vulnérabilité contient toutes les informations requises avec qualité suffisante"""
+        required_fields = ['title', 'severity', 'cvss_score', 'finding_type', 
+                          'description', 'remediation', 'business_impact', 
+                          'affected_assets', 'evidence']
+        
+        # Vérifier la présence de tous les champs
+        for field in required_fields:
+            if field not in vuln or not vuln[field]:
+                print(f"   ⚠️  Champ manquant ou vide: {field}")
+                return False
+        
+        # Valider la sévérité
+        valid_severities = ['critical', 'high', 'medium', 'low']
+        if vuln['severity'].lower() not in valid_severities:
+            print(f"   ⚠️  Sévérité invalide: {vuln['severity']} (doit être: critical, high, medium, ou low)")
+            return False
+        
+        # Normaliser la sévérité
+        vuln['severity'] = vuln['severity'].lower()
+        
+        # Valider le score CVSS
+        try:
+            score = float(vuln['cvss_score'])
+            if score < 0.0 or score > 10.0:
+                print(f"   ⚠️  Score CVSS invalide: {score} (doit être entre 0.0 et 10.0)")
+                return False
+        except (ValueError, TypeError):
+            print(f"   ⚠️  Score CVSS non numérique: {vuln['cvss_score']}")
+            return False
+        
+        # Vérifier la longueur minimale des descriptions
+        if len(str(vuln['description'])) < 100:
+            print(f"   ⚠️  Description trop courte ({len(str(vuln['description']))} caractères, minimum 100)")
+            return False
+        
+        if len(str(vuln['remediation'])) < 80:
+            print(f"   ⚠️  Remédiation trop courte ({len(str(vuln['remediation']))} caractères, minimum 80)")
+            return False
+        
+        if len(str(vuln['business_impact'])) < 50:
+            print(f"   ⚠️  Impact métier trop court ({len(str(vuln['business_impact']))} caractères, minimum 50)")
+            return False
+        
+        # Vérifier que affected_assets est une liste non vide
+        if not isinstance(vuln['affected_assets'], list) or len(vuln['affected_assets']) == 0:
+            print(f"   ⚠️  Liste des actifs affectés vide ou invalide")
+            return False
+        
+        # Vérifier que cve_ids est une liste (peut être vide)
+        if 'cve_ids' not in vuln:
+            vuln['cve_ids'] = []
+        if not isinstance(vuln['cve_ids'], list):
+            vuln['cve_ids'] = []
+        
+        return True
+
     def send_to_ollama(self, raw_data, filename):
         """
         Envoie les données brutes à Ollama pour analyse intelligente.
@@ -64,40 +121,79 @@ class VulnerabilityAnalyzer:
         3. Générer description + remédiation
         """
 
-        prompt = f"""Tu es un analyste cybersécurité expert. Tu dois UNIQUEMENT retourner du JSON valide.
+        prompt = f"""Tu es un expert en cybersécurité et pentesting. Ton rôle est d'analyser des résultats de scans de sécurité et d'identifier les VRAIES vulnérabilités exploitables.
 
-DONNÉES À ANALYSER (fichier: {filename}):
+DONNÉES BRUTES À ANALYSER (fichier: {filename}):
 {raw_data}
 
-CONSIGNES ABSOLUES:
-- Réponds UNIQUEMENT en JSON
-- PAS de texte explicatif
-- PAS de "Bonjour", "Voici", "D'après"
-- JUSTE le JSON brut
+INSTRUCTIONS CRITIQUES:
+1. Tu dois UNIQUEMENT retourner du JSON valide, sans aucun texte avant ou après
+2. Analyse ATTENTIVEMENT les données pour identifier les vulnérabilités RÉELLES
+3. NE PAS considérer comme vulnérabilité:
+   - Les ports ouverts standards sans faille connue
+   - Les services normaux sans version vulnérable
+   - Les informations techniques sans risque réel
+   - Les simples énumérations sans exploitation possible
 
-RÈGLES DE DÉTECTION:
-1. Identifie si c'est bien une vulnérabilité.
-2. Si rien de critique, retourne: {{"vulnerabilities": []}}
+4. CONSIDÉRER comme vulnérabilité:
+   - Credentials valides découverts (passwords faibles, comptes compromis)
+   - Services avec CVE connus et exploitables
+   - Configurations dangereuses (SMB signing disabled, LDAP anonymous bind, etc.)
+   - Failles d'authentification ou d'autorisation
+   - Exposition de données sensibles
+   - Possibilité d'élévation de privilèges
+   - Chemins d'attaque exploitables
 
-EXEMPLE DE FORMAT JSON REQUIS (COPIE LE FORMAT MAIS ADAPTE LE CONTENU PAR RAPPORT A LA VULNERABILITE TROUVEE):
+5. Pour CHAQUE vulnérabilité identifiée, tu DOIS fournir:
+   - title: Titre clair et précis (max 100 caractères)
+   - severity: "critical", "high", "medium", ou "low" (UNIQUEMENT ces valeurs)
+   - cvss_score: Score CVSS v3.1 réaliste (0.0 à 10.0)
+   - cve_ids: Liste des CVE si applicable (vide [] si aucun)
+   - finding_type: Catégorie précise (ex: "Weak Credentials", "Misconfiguration", "Known Vulnerability", "Information Disclosure")
+   - description: Analyse DÉTAILLÉE (minimum 200 caractères) expliquant:
+     * Ce qui a été trouvé exactement
+     * Pourquoi c'est une vulnérabilité
+     * Comment cela peut être exploité
+     * Le contexte technique complet
+   - remediation: Plan de remédiation DÉTAILLÉ (minimum 150 caractères) avec:
+     * Actions immédiates à prendre
+     * Étapes de correction détaillées et numérotées
+     * Recommandations de configuration
+     * Meilleures pratiques de sécurité
+   - business_impact: Impact métier CONCRET (minimum 100 caractères):
+     * Conséquences pour l'entreprise
+     * Risques financiers/réputationnels
+     * Scénarios d'attaque réalistes
+   - affected_assets: Liste PRÉCISE des assets affectés (IPs, hostnames, usernames, services)
+   - evidence: Citation EXACTE de la preuve technique extraite des données brutes
+
+6. ÉVALUATION DE LA CRITICITÉ:
+   - critical (9.0-10.0): Exploitation immédiate possible, accès root/admin, RCE, compromission totale
+   - high (7.0-8.9): Accès non autorisé, exfiltration de données, mouvement latéral
+   - medium (4.0-6.9): Configuration faible, information disclosure, DoS
+   - low (0.1-3.9): Informations mineures, hardening recommendations
+
+7. Si AUCUNE vulnérabilité réelle n'est trouvée, retourne: {{"vulnerabilities": []}}
+
+FORMAT JSON REQUIS (à respecter STRICTEMENT):
 {{
   "vulnerabilities": [
     {{
-      "title": "Titre",
-      "severity": "Niveau de sévérité",
-      "cvss_score": Score CVSS,
-      "cve_ids": [],
-      "finding_type": "Type de vulnérabilité",
-      "description": "Description détaillée de la vulnérabilité",
-      "remediation": "Explication du ou des moyens de remédiations",
-      "business_impact": "Description de l'impact métier",
-      "affected_assets": ["Asset affecté par la vulnérabilité"],
-      "evidence": "Preuve que la vulnérabilité existe"
+      "title": "Titre clair et précis de la vulnérabilité",
+      "severity": "critical",
+      "cvss_score": 9.5,
+      "cve_ids": ["CVE-2023-1234"],
+      "finding_type": "Catégorie de la vulnérabilité",
+      "description": "Description technique détaillée et complète de la vulnérabilité, expliquant le contexte, l'exploitation possible et les risques associés. Minimum 200 caractères.",
+      "remediation": "1. Action immédiate requise\n2. Étape de correction détaillée\n3. Configuration recommandée\n4. Bonnes pratiques à suivre\n5. Mesures de prévention\nMinimum 150 caractères.",
+      "business_impact": "Impact concret pour l'entreprise: description des conséquences métier, risques financiers, réputationnels et opérationnels. Scénarios d'attaque réalistes. Minimum 100 caractères.",
+      "affected_assets": ["192.168.1.10", "user@domain.local", "hostname.domain"],
+      "evidence": "Preuve technique exacte extraite des données brutes"
     }}
   ]
 }}
 
-RÉPONDS MAINTENANT (UNIQUEMENT JSON):"""
+RÉPONDS MAINTENANT (UNIQUEMENT LE JSON, RIEN D'AUTRE):"""
 
         try:
             response = ollama.generate(
@@ -105,8 +201,8 @@ RÉPONDS MAINTENANT (UNIQUEMENT JSON):"""
                 prompt=prompt,
                 stream=False,
                 options={
-                    "temperature": 0.1,  # Rendre l'IA plus déterministe
-                    "num_predict": 800   # Limiter la longueur
+                    "temperature": 0.2,  # Légèrement plus créatif pour les descriptions
+                    "num_predict": 2000   # Augmenté pour des réponses plus détaillées
                 }
             )
 
@@ -129,7 +225,17 @@ RÉPONDS MAINTENANT (UNIQUEMENT JSON):"""
 
             # Parse la réponse JSON
             result = json.loads(cleaned_response)
-            return result.get('vulnerabilities', [])
+            vulnerabilities = result.get('vulnerabilities', [])
+            
+            # Valider chaque vulnérabilité
+            validated_vulns = []
+            for vuln in vulnerabilities:
+                if self.validate_vulnerability(vuln, filename):
+                    validated_vulns.append(vuln)
+                else:
+                    print(f"   ⚠️  Vulnérabilité rejetée car elle ne respecte pas les critères de qualité")
+            
+            return validated_vulns
 
         except json.JSONDecodeError:
             print(f"⚠️  Erreur parsing JSON de Ollama pour {filename}")
@@ -150,11 +256,11 @@ RÉPONDS MAINTENANT (UNIQUEMENT JSON):"""
             try:
                 parsed = self.parse_file(filepath)
 
-                # Convertir en texte pour Ollama
+                # Convertir en texte pour Ollama avec plus de contexte
                 if parsed['type'] == 'json':
-                    raw_text = json.dumps(parsed['content'], indent=2)[:3000]
+                    raw_text = json.dumps(parsed['content'], indent=2)[:8000]  # Augmenté de 3000 à 8000
                 else:
-                    raw_text = parsed['content'][:3000]
+                    raw_text = parsed['content'][:8000]  # Augmenté de 3000 à 8000
 
                 # Envoyer à Ollama
                 vulnerabilities = self.send_to_ollama(raw_text, parsed['filename'])

@@ -98,20 +98,20 @@ class ReportGenerator:
         print(f"✅ Rapport PDF généré: {output_path}")
 
     def generate_reports(self):
-        """Génère les rapports selon la configuration"""
-        report_format = self.config.get('report', {}).get('format', 'both')
+        """Génère le rapport PDF uniquement"""
         output_dir = self.config.get('report', {}).get('output_dir', 'output')
-
-        html_path = f"{output_dir}/rapport.html"
         pdf_path = f"{output_dir}/rapport.pdf"
 
-        if report_format in ['html', 'both']:
-            html_content = self.generate_html(html_path)
-        else:
-            html_content = None
-
-        if report_format in ['pdf', 'both']:
-            self.generate_pdf(html_content, pdf_path)
+        # Toujours générer le HTML en interne (nécessaire pour le PDF)
+        html_content = self.generate_html(f"{output_dir}/.rapport_temp.html")
+        
+        # Générer le PDF
+        self.generate_pdf(html_content, pdf_path)
+        
+        # Supprimer le fichier HTML temporaire
+        temp_html_path = Path(f"{output_dir}/.rapport_temp.html")
+        if temp_html_path.exists():
+            temp_html_path.unlink()
 
         print("\n" + "="*60)
         print("📊 GÉNÉRATION DU RAPPORT TERMINÉE")
@@ -122,14 +122,14 @@ class ReportGenerator:
         print(f"  - High: {self.findings_data.get('summary', {}).get('high', 0)}")
         print(f"  - Medium: {self.findings_data.get('summary', {}).get('medium', 0)}")
         print(f"  - Low: {self.findings_data.get('summary', {}).get('low', 0)}")
+        print(f"\n✅ Rapport PDF généré: {pdf_path}")
         print("="*60)
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Générer un rapport de pentest professionnel')
+    parser = argparse.ArgumentParser(description='Générer un rapport de pentest professionnel en PDF')
     parser.add_argument('--config', default='config.yaml', help='Chemin vers le fichier de configuration')
     parser.add_argument('--findings', default='results/findings_enrichis.json', help='Chemin vers le fichier findings JSON')
-    parser.add_argument('--format', choices=['html', 'pdf', 'both'], help='Format du rapport (override config)')
     parser.add_argument('--output', help='Répertoire de sortie (override config)')
 
     args = parser.parse_args()
@@ -138,8 +138,6 @@ def main():
     generator = ReportGenerator(config_path=args.config, findings_path=args.findings)
 
     # Override config si arguments fournis
-    if args.format:
-        generator.config['report']['format'] = args.format
     if args.output:
         generator.config['report']['output_dir'] = args.output
 
