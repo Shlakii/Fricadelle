@@ -50,7 +50,8 @@ class VulnerabilityAnalyzer:
                 raw_data = f.read()
                 result = chardet.detect(raw_data)
                 return result['encoding'] or 'utf-8'
-        except:
+        except (IOError, OSError) as e:
+            self.log(f"Erreur lors de la détection d'encodage: {e}", "WARNING")
             return 'utf-8'
 
     def parse_file(self, filepath):
@@ -90,7 +91,8 @@ class VulnerabilityAnalyzer:
                     with open(filepath, encoding=encoding) as f:
                         content = yaml.safe_load(f)
                         return {"type": "yaml", "content": content, "filename": filename}
-                except:
+                except yaml.YAMLError as e:
+                    self.log(f"Erreur YAML pour {filename}, traité comme texte: {e}", "WARNING")
                     with open(filepath, encoding=encoding) as f:
                         return {"type": "text", "content": f.read(), "filename": filename}
 
@@ -106,7 +108,8 @@ class VulnerabilityAnalyzer:
                 with open(filepath, 'rb') as f:
                     content = f.read().decode('utf-8', errors='ignore')
                     return {"type": "text", "content": content, "filename": filename}
-            except:
+            except (IOError, OSError, UnicodeDecodeError) as fallback_error:
+                self.log(f"Impossible de lire {filename}: {fallback_error}", "ERROR")
                 raise
 
     def clean_json_response(self, response_text):
@@ -382,8 +385,8 @@ RÉPONDS MAINTENANT AVEC LE JSON COMPLET ET VALIDE (UNIQUEMENT LE JSON, PAS DE T
                 cleaned_response = cleaned_response.replace('\n', '\\n')
                 try:
                     result = json.loads(cleaned_response)
-                except:
-                    self.log("Impossible de parser le JSON", "ERROR")
+                except json.JSONDecodeError as je2:
+                    self.log(f"Impossible de parser le JSON: {je2}", "ERROR")
                     self.errors.append({"file": filename, "error": "JSON parsing failed"})
                     return []
 
