@@ -4,3 +4,4 @@ weasyprint
 pyyaml
 pillow
 lxml
+chardet
