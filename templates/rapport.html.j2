@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rapport d'Audit de Sécurité - {{ audit_metadata.client_name }}</title>
-    <link rel="stylesheet" href="../assets/style.css">
+    <style>
+{{ css_content }}
+    </style>
 </head>
 <body>
 
@@ -44,21 +46,21 @@
 <!-- Executive Summary -->
 <div id="executive-summary" class="section page-break">
     <h1>1. Résumé Exécutif</h1>
-    
+
     <div class="executive-summary">
         <h3>Contexte de la Mission</h3>
         <p>
             Dans le cadre de l'évaluation de la posture de sécurité de <strong>{{ audit_metadata.client_name }}</strong>,
             notre équipe a réalisé un {{ audit_metadata.audit_type }} du {{ audit_metadata.audit_date }} au {{ audit_metadata.audit_end_date }}.
         </p>
-        
+
         <h3>Périmètre d'Audit</h3>
         <ul>
             {% for scope_item in audit_metadata.scope %}
             <li>{{ scope_item }}</li>
             {% endfor %}
         </ul>
-        
+
         <h3>Synthèse des Résultats</h3>
         <p>
             L'audit a permis d'identifier <strong>{{ summary.total_findings }} vulnérabilités</strong> réparties comme suit :
@@ -69,7 +71,7 @@
             <li><strong style="color: #ffc107;">{{ summary.medium }} vulnérabilités moyennes</strong> à corriger à moyen terme</li>
             <li><strong style="color: #0dcaf0;">{{ summary.low }} vulnérabilités faibles</strong> à corriger sur le long terme</li>
         </ul>
-        
+
         <h3>Recommandations Prioritaires</h3>
         <p>
             Les vulnérabilités critiques et élevées représentent un risque significatif pour la sécurité de l'organisation.
@@ -81,7 +83,7 @@
 <!-- Dashboard -->
 <div id="dashboard" class="section page-break">
     <h1>2. Tableau de Bord</h1>
-    
+
     <h2>Vue d'Ensemble par Sévérité</h2>
     <div class="dashboard">
         <div class="stat-card critical">
@@ -101,7 +103,7 @@
             <div class="number">{{ summary.low }}</div>
         </div>
     </div>
-    
+
     <h2>Répartition par Outil</h2>
     <table>
         <thead>
@@ -119,7 +121,7 @@
             {% endfor %}
         </tbody>
     </table>
-    
+
     <h2>Répartition par Type</h2>
     <table>
         <thead>
@@ -142,10 +144,10 @@
 <!-- Findings Details -->
 <div id="findings" class="section page-break">
     <h1>3. Détails des Vulnérabilités</h1>
-    
+
     <div id="findings-by-severity">
         <h2>3.1. Classement par Niveau de Sévérité</h2>
-        
+
         <!-- Critical Findings -->
         {% set critical_findings = findings | selectattr('severity', 'equalto', 'critical') | list %}
         {% if critical_findings %}
@@ -164,7 +166,7 @@
                     {% endif %}
                 </div>
             </div>
-            
+
             <div class="finding-meta">
                 <div class="meta-item">
                     <span class="meta-label">Type:</span> {{ finding.finding_type }}
@@ -178,20 +180,20 @@
                     <span class="meta-label">Statut:</span> {{ finding.status }}
                 </div>
             </div>
-            
+
             <div class="finding-content">
                 <div class="finding-section">
                     <h4>📋 Description</h4>
                     <p>{{ finding.description }}</p>
                 </div>
-                
+
                 {% if finding.business_impact %}
                 <div class="finding-section">
                     <h4>💼 Impact Métier</h4>
                     <p>{{ finding.business_impact }}</p>
                 </div>
                 {% endif %}
-                
+
                 {% if finding.affected_assets %}
                 <div class="finding-section">
                     <h4>🎯 Actifs Affectés</h4>
@@ -202,12 +204,12 @@
                     </ul>
                 </div>
                 {% endif %}
-                
+
                 <div class="finding-section">
                     <h4>🔧 Remédiation</h4>
                     <p>{{ finding.remediation }}</p>
                 </div>
-                
+
                 {% if finding.evidence %}
                 <div class="finding-section">
                     <h4>🔍 Preuve Technique</h4>
@@ -218,7 +220,7 @@
         </div>
         {% endfor %}
         {% endif %}
-        
+
         <!-- High Findings -->
         {% set high_findings = findings | selectattr('severity', 'equalto', 'high') | list %}
         {% if high_findings %}
@@ -237,7 +239,7 @@
                     {% endif %}
                 </div>
             </div>
-            
+
             <div class="finding-meta">
                 <div class="meta-item">
                     <span class="meta-label">Type:</span> {{ finding.finding_type }}
@@ -251,20 +253,20 @@
                     <span class="meta-label">Statut:</span> {{ finding.status }}
                 </div>
             </div>
-            
+
             <div class="finding-content">
                 <div class="finding-section">
                     <h4>📋 Description</h4>
                     <p>{{ finding.description }}</p>
                 </div>
-                
+
                 {% if finding.business_impact %}
                 <div class="finding-section">
                     <h4>💼 Impact Métier</h4>
                     <p>{{ finding.business_impact }}</p>
                 </div>
                 {% endif %}
-                
+
                 {% if finding.affected_assets %}
                 <div class="finding-section">
                     <h4>🎯 Actifs Affectés</h4>
@@ -275,12 +277,12 @@
                     </ul>
                 </div>
                 {% endif %}
-                
+
                 <div class="finding-section">
                     <h4>🔧 Remédiation</h4>
                     <p>{{ finding.remediation }}</p>
                 </div>
-                
+
                 {% if finding.evidence %}
                 <div class="finding-section">
                     <h4>🔍 Preuve Technique</h4>
@@ -291,7 +293,7 @@
         </div>
         {% endfor %}
         {% endif %}
-        
+
         <!-- Medium Findings -->
         {% set medium_findings = findings | selectattr('severity', 'equalto', 'medium') | list %}
         {% if medium_findings %}
@@ -310,7 +312,7 @@
                     {% endif %}
                 </div>
             </div>
-            
+
             <div class="finding-meta">
                 <div class="meta-item">
                     <span class="meta-label">Type:</span> {{ finding.finding_type }}
@@ -324,13 +326,13 @@
                     <span class="meta-label">Statut:</span> {{ finding.status }}
                 </div>
             </div>
-            
+
             <div class="finding-content">
                 <div class="finding-section">
                     <h4>📋 Description</h4>
                     <p>{{ finding.description }}</p>
                 </div>
-                
+
                 <div class="finding-section">
                     <h4>🔧 Remédiation</h4>
                     <p>{{ finding.remediation }}</p>
@@ -339,7 +341,7 @@
         </div>
         {% endfor %}
         {% endif %}
-        
+
         <!-- Low Findings -->
         {% set low_findings = findings | selectattr('severity', 'equalto', 'low') | list %}
         {% if low_findings %}
@@ -358,19 +360,19 @@
                     {% endif %}
                 </div>
             </div>
-            
+
             <div class="finding-meta">
                 <div class="meta-item">
                     <span class="meta-label">Type:</span> {{ finding.finding_type }}
                 </div>
             </div>
-            
+
             <div class="finding-content">
                 <div class="finding-section">
                     <h4>📋 Description</h4>
                     <p>{{ finding.description }}</p>
                 </div>
-                
+
                 <div class="finding-section">
                     <h4>🔧 Remédiation</h4>
                     <p>{{ finding.remediation }}</p>
@@ -386,12 +388,12 @@
 {% if include_roadmap %}
 <div id="roadmap" class="section page-break">
     <h1>4. Plan de Remédiation</h1>
-    
+
     <p>
         Nous recommandons de traiter les vulnérabilités selon les priorités suivantes,
         en commençant par les vulnérabilités critiques et élevées qui présentent les risques les plus importants.
     </p>
-    
+
     <div class="roadmap">
         <div class="timeline">
             {% if summary.critical > 0 %}
@@ -404,7 +406,7 @@
                 </p>
             </div>
             {% endif %}
-            
+
             {% if summary.high > 0 %}
             <div class="timeline-item priority-high">
                 <h3>Phase 2 - Prioritaire (2-4 semaines)</h3>
@@ -415,7 +417,7 @@
                 </p>
             </div>
             {% endif %}
-            
+
             {% if summary.medium > 0 %}
             <div class="timeline-item priority-medium">
                 <h3>Phase 3 - Moyen terme (1-2 mois)</h3>
@@ -426,7 +428,7 @@
                 </p>
             </div>
             {% endif %}
-            
+
             {% if summary.low > 0 %}
             <div class="timeline-item">
                 <h3>Phase 4 - Long terme (2-3 mois)</h3>
@@ -446,7 +448,7 @@
 {% if include_appendix %}
 <div id="appendix" class="appendix section page-break">
     <h1>5. Annexes Techniques</h1>
-    
+
     <h2>5.1. Échelle de Sévérité CVSS</h2>
     <table>
         <thead>
@@ -479,14 +481,14 @@
             </tr>
         </tbody>
     </table>
-    
+
     <h2>5.2. Outils Utilisés</h2>
     <ul>
         {% for tool in statistics.findings_by_tool.keys() %}
         <li>{{ tool }}</li>
         {% endfor %}
     </ul>
-    
+
     <h2>5.3. Glossaire</h2>
     <table>
         <thead>
@@ -518,7 +520,7 @@
             </tr>
         </tbody>
     </table>
-    
+
     <h2>5.4. Disclaimer Légal</h2>
     <div class="executive-summary">
         <p>
